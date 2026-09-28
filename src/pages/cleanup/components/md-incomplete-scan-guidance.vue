@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import MdDialogContent from '@/components/custom/md-dialog-content.vue';
 import MdDialogFooter from '@/components/custom/md-dialog-footer.vue';
@@ -10,63 +10,52 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { ICON_NAMES } from '@/lib/models/ui';
 
-const props = defineProps<{
+defineProps<{
   modelValue: boolean;
-  summary: string;
-  title: string;
-  description: string;
-  instructions: string;
-  skipLabel: string;
-  openSettingsLabel: string;
-  openSettings: () => Promise<boolean>;
+  failureCount: number;
+  retryDisabled: boolean;
 }>();
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
+  openLogs: [];
+  retry: [];
 }>();
-
-const openingSettings = ref(false);
-
-async function requestOpenSettings() {
-  if (openingSettings.value) return;
-  openingSettings.value = true;
-  try {
-    const opened = await props.openSettings();
-    if (opened) emit('update:modelValue', false);
-  } finally {
-    openingSettings.value = false;
-  }
+const { t } = useI18n({ useScope: 'global' });
+function requestRetry() {
+  emit('update:modelValue', false);
+  emit('retry');
 }
 </script>
 
 <template>
   <button
-    class="permission-summary"
     type="button"
+    class="scan-warning-trigger"
     aria-haspopup="dialog"
     :aria-expanded="modelValue"
-    :disabled="openingSettings"
     @click="emit('update:modelValue', true)"
   >
-    <span>{{ summary }}</span>
+    <span>{{ t('cleanup.permission.otherWarning') }}</span>
     <MdIcon :name="ICON_NAMES.info" :size="13" aria-hidden="true" />
   </button>
 
   <Dialog :open="modelValue" @update:open="emit('update:modelValue', $event)">
     <MdDialogContent size="compact">
       <MdDialogHeader>
-        <DialogTitle>{{ title }}</DialogTitle>
-        <DialogDescription>{{ description }}</DialogDescription>
+        <DialogTitle>{{ t('cleanup.permission.otherTitle') }}</DialogTitle>
+        <DialogDescription>
+          {{ t('cleanup.permission.otherDescription', { count: failureCount }) }}
+        </DialogDescription>
       </MdDialogHeader>
-      <MdInlineNotice class="permission-instructions" :icon-name="ICON_NAMES.info" tone="info">
-        {{ instructions }}
+      <MdInlineNotice class="scan-warning-instructions" :icon-name="ICON_NAMES.info" tone="info">
+        {{ t('cleanup.permission.otherInstructions') }}
       </MdInlineNotice>
-      <MdDialogFooter>
-        <Button variant="outline" type="button" :disabled="openingSettings" @click="emit('update:modelValue', false)">
-          {{ skipLabel }}
+      <MdDialogFooter align="between">
+        <Button type="button" variant="outline" @click="emit('openLogs')">
+          {{ t('settings.feedbackDialog.openLogFolder') }}
         </Button>
-        <Button type="button" :disabled="openingSettings" @click="requestOpenSettings">
-          <MdIcon :name="ICON_NAMES.external" :size="15" />
-          {{ openSettingsLabel }}
+        <Button type="button" :disabled="retryDisabled" @click="requestRetry">
+          {{ t('overview.rescan') }}
         </Button>
       </MdDialogFooter>
     </MdDialogContent>
@@ -76,8 +65,8 @@ async function requestOpenSettings() {
 <style scoped>
 @reference "@assets/main.css";
 
-.permission-summary {
-  display: flex;
+.scan-warning-trigger {
+  display: inline-flex;
   min-width: 0;
   max-width: min(440px, 46vw);
   align-items: center;
@@ -85,32 +74,33 @@ async function requestOpenSettings() {
   border: 0;
   padding: 4px 0;
   background: transparent;
-  color: var(--primary);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
 }
 
-.permission-summary span {
+.scan-warning-trigger span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.permission-summary :deep(svg) {
+.scan-warning-trigger :deep(svg) {
   flex: none;
 }
 
-.permission-summary:not(:disabled):hover {
+.scan-warning-trigger:hover {
+  color: var(--foreground);
   text-decoration: underline;
 }
 
-.permission-summary:disabled {
-  cursor: default;
-  opacity: 0.65;
+.scan-warning-trigger:focus-visible {
+  border-radius: 3px;
+  @apply outline-none ring-2 ring-ring;
 }
 
-.permission-instructions {
+.scan-warning-instructions {
   margin: 0 var(--layout-dialog-body-inline-padding) 14px;
 }
 </style>
