@@ -109,7 +109,9 @@
     "privacy": "Очистка конфиденциальных данных",
     "startup": "Автозагрузка",
     "history": "История операций",
-    "settings": "Параметры"
+    "settings": "Параметры",
+    "developer-environments": "Среды разработки",
+    "open-file-holders": "Открытые файлы"
   },
   "fullDiskAccessGuidance": {
     "summary": "Предоставьте полный доступ к диску для более полных результатов",
@@ -4046,5 +4048,75 @@
     "autoRuleExclusions": "Исключённые приложения: {count}",
     "revealAction": "Показать расположение",
     "quitAction": "Завершить"
+  },
+  "developerEnvironments": {
+    "title": "Среды разработки",
+    "subtitle": "Пакеты Homebrew и виртуальные окружения Python, установленные на этом компьютере",
+    "rescan": "Сканировать заново",
+    "scanning": "Сканирование…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Окружения Python"
+    },
+    "summary": "Элементов: {count} · {size}",
+    "homebrew": {
+      "unsupportedTitle": "Homebrew не установлен",
+      "unsupportedDescription": "Каталоги Cellar и Caskroom на этом компьютере не найдены",
+      "emptyTitle": "Пакетов нет",
+      "emptyDescription": "В Homebrew нет установленных пакетов",
+      "kinds": {
+        "formula": "Formula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "Установлен вами",
+        "dependency": "Зависимость",
+        "unusedDependency": "Неиспользуемая зависимость"
+      },
+      "requiredBy": "Нужен для: {names}",
+      "versions": "Версии: {versions}",
+      "installedAt": "Установлен {date}",
+      "hint": "Удаление выполняется через Homebrew. Скопируйте команду и выполните её в Терминале; brew не удалит пакет, который нужен другим пакетам"
+    },
+    "python": {
+      "emptyTitle": "Виртуальные окружения не найдены",
+      "emptyDescription": "Файлы pyvenv.cfg в домашней папке не найдены",
+      "incomplete": "Поиск остановлен из-за лимита размера или времени. Часть окружений могла не попасть в список",
+      "flags": {
+        "interpreterMissing": "Python отсутствует",
+        "homeRoot": "В домашней папке",
+        "noProject": "Рядом нет проекта",
+        "toolManaged": "Управляется утилитой",
+        "systemSitePackages": "Использует системные пакеты"
+      },
+      "version": "Python {version}",
+      "files": "Файлов: {count}",
+      "createdAt": "Создано {date}",
+      "reveal": "Показать в файловом менеджере",
+      "hint": "Окружения без проекта или лежащие прямо в домашней папке чаще всего не нужны или были установлены глобально по ошибке"
+    }
+  },
+  "openFileHolders": {
+    "title": "Открытые файлы",
+    "subtitle": "Какие приложения держат файл, папку или том открытыми",
+    "pathLabel": "Путь",
+    "pathPlaceholder": "/Volumes/Диск или /Users/вы/Папка",
+    "chooseFolder": "Выбрать папку",
+    "find": "Найти",
+    "searching": "Поиск…",
+    "emptyTitle": "Путь никто не держит",
+    "emptyDescription": "Ни у одного доступного процесса он не открыт",
+    "visibilityNotice": "Показаны только процессы вашей учётной записи. Путь могут держать и процессы других пользователей или системы",
+    "helper": "Вспомогательный: {command}",
+    "pid": "PID {pid}",
+    "openFiles": "Открытых файлов: {count}",
+    "close": "Закрыть",
+    "forceClose": "Закрыть принудительно",
+    "confirmTitle": "Закрыть {name}?",
+    "confirmDescription": "MangoDisk сначала попросит приложение завершиться, чтобы оно успело сохранить данные",
+    "forceConfirmTitle": "Принудительно закрыть {name}?",
+    "forceConfirmDescription": "Процесс завершится немедленно, несохранённые данные могут быть потеряны",
+    "closed": "Процесс остановлен",
+    "stillRunning": "Процесс ещё работает. Можно закрыть его принудительно"
   }
 }

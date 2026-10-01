@@ -2,6 +2,7 @@
 mod elevation;
 #[cfg(windows)]
 pub use elevation::run_elevation_helper_mode;
+pub mod application_entitlements;
 pub mod application_quit;
 #[cfg(not(target_os = "linux"))]
 mod browser_profile;
@@ -17,6 +18,7 @@ mod inventory;
 pub mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+pub mod open_file_holders;
 pub mod path_mutation;
 #[cfg(not(target_os = "linux"))]
 mod startup_helper;

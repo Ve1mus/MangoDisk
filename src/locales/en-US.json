@@ -109,7 +109,9 @@
     "privacy": "Privacy Cleanup",
     "startup": "Startup Items",
     "history": "Operation History",
-    "settings": "Settings"
+    "settings": "Settings",
+    "developer-environments": "Developer Environments",
+    "open-file-holders": "Open Files"
   },
   "fullDiskAccessGuidance": {
     "summary": "Enable Full Disk Access for more complete results",
@@ -4046,5 +4048,75 @@
     "autoRuleExclusions": "Excluded apps: {count}",
     "revealAction": "Open location",
     "quitAction": "Quit"
+  },
+  "developerEnvironments": {
+    "title": "Developer Environments",
+    "subtitle": "Review Homebrew packages and Python virtual environments installed on this computer",
+    "rescan": "Rescan",
+    "scanning": "Scanning…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Python environments"
+    },
+    "summary": "{count} items · {size}",
+    "homebrew": {
+      "unsupportedTitle": "Homebrew is not installed",
+      "unsupportedDescription": "No Homebrew Cellar or Caskroom was found on this computer",
+      "emptyTitle": "No packages",
+      "emptyDescription": "Homebrew has no installed packages",
+      "kinds": {
+        "formula": "Formula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "Installed by you",
+        "dependency": "Dependency",
+        "unusedDependency": "Unused dependency"
+      },
+      "requiredBy": "Required by {names}",
+      "versions": "Versions: {versions}",
+      "installedAt": "Installed {date}",
+      "hint": "Removal is done with Homebrew. Copy the command and run it in Terminal; brew refuses to remove a package other packages still need"
+    },
+    "python": {
+      "emptyTitle": "No virtual environments found",
+      "emptyDescription": "No pyvenv.cfg was found in your home folder",
+      "incomplete": "The search stopped early because it reached its size or time limit. Some environments may be missing",
+      "flags": {
+        "interpreterMissing": "Python is missing",
+        "homeRoot": "In home folder",
+        "noProject": "No project nearby",
+        "toolManaged": "Managed by a tool",
+        "systemSitePackages": "Uses system packages"
+      },
+      "version": "Python {version}",
+      "files": "{count} files",
+      "createdAt": "Created {date}",
+      "reveal": "Show in file manager",
+      "hint": "Environments without a project, or sitting directly in the home folder, are the most likely to be unneeded or installed globally by mistake"
+    }
+  },
+  "openFileHolders": {
+    "title": "Open Files",
+    "subtitle": "Find which apps keep a file, folder, or volume open",
+    "pathLabel": "Path",
+    "pathPlaceholder": "/Volumes/Disk or /Users/you/Folder",
+    "chooseFolder": "Choose folder",
+    "find": "Find",
+    "searching": "Searching…",
+    "emptyTitle": "Nothing is holding this path",
+    "emptyDescription": "No process you can inspect has it open",
+    "visibilityNotice": "Only processes of your account are listed. Processes of other users and the system may also hold the path",
+    "helper": "Helper: {command}",
+    "pid": "PID {pid}",
+    "openFiles": "Open files: {count}",
+    "close": "Close",
+    "forceClose": "Force close",
+    "confirmTitle": "Close {name}?",
+    "confirmDescription": "MangoDisk asks the app to quit first, so it can save its work",
+    "forceConfirmTitle": "Force close {name}?",
+    "forceConfirmDescription": "The process ends immediately and unsaved data can be lost",
+    "closed": "The process has stopped",
+    "stillRunning": "The process is still running. You can force close it"
   }
 }

@@ -109,7 +109,9 @@
     "privacy": "隱私清理",
     "startup": "啟動項目管理",
     "history": "操作紀錄",
-    "settings": "設定"
+    "settings": "設定",
+    "developer-environments": "開發環境",
+    "open-file-holders": "開啟的檔案"
   },
   "fullDiskAccessGuidance": {
     "summary": "開啟完整磁碟存取，取得更完整的結果",
@@ -4046,5 +4048,75 @@
     "autoRuleExclusions": "排除應用程式：{count} 個",
     "revealAction": "開啟位置",
     "quitAction": "結束"
+  },
+  "developerEnvironments": {
+    "title": "開發環境",
+    "subtitle": "檢視這台電腦上安裝的 Homebrew 套件與 Python 虛擬環境",
+    "rescan": "重新掃描",
+    "scanning": "正在掃描…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Python 環境"
+    },
+    "summary": "{count} 項 · {size}",
+    "homebrew": {
+      "unsupportedTitle": "未安裝 Homebrew",
+      "unsupportedDescription": "在這台電腦上找不到 Homebrew 的 Cellar 或 Caskroom",
+      "emptyTitle": "沒有套件",
+      "emptyDescription": "Homebrew 中沒有已安裝的套件",
+      "kinds": {
+        "formula": "Formula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "由你安裝",
+        "dependency": "相依項目",
+        "unusedDependency": "未使用的相依項目"
+      },
+      "requiredBy": "被下列套件需要：{names}",
+      "versions": "版本：{versions}",
+      "installedAt": "安裝於 {date}",
+      "hint": "請使用 Homebrew 解除安裝。複製指令後在終端機中執行；若其他套件仍需要它，brew 會拒絕移除"
+    },
+    "python": {
+      "emptyTitle": "找不到虛擬環境",
+      "emptyDescription": "在主資料夾中找不到 pyvenv.cfg",
+      "incomplete": "搜尋因達到大小或時間上限而提前停止，部分環境可能未列出",
+      "flags": {
+        "interpreterMissing": "缺少 Python",
+        "homeRoot": "位於主資料夾",
+        "noProject": "附近沒有專案",
+        "toolManaged": "由工具管理",
+        "systemSitePackages": "使用系統套件"
+      },
+      "version": "Python {version}",
+      "files": "{count} 個檔案",
+      "createdAt": "建立於 {date}",
+      "reveal": "在檔案管理員中顯示",
+      "hint": "沒有專案或直接放在主資料夾中的環境，最可能是不再需要的，或是誤裝成了全域環境"
+    }
+  },
+  "openFileHolders": {
+    "title": "開啟的檔案",
+    "subtitle": "找出哪些應用程式正在佔用檔案、資料夾或磁碟區",
+    "pathLabel": "路徑",
+    "pathPlaceholder": "/Volumes/磁碟 或 /Users/你/資料夾",
+    "chooseFolder": "選擇資料夾",
+    "find": "尋找",
+    "searching": "正在尋找…",
+    "emptyTitle": "沒有程序佔用此路徑",
+    "emptyDescription": "你能檢查的程序中沒有開啟它的",
+    "visibilityNotice": "僅列出你帳號下的程序。其他使用者或系統的程序也可能佔用該路徑",
+    "helper": "輔助程序：{command}",
+    "pid": "PID {pid}",
+    "openFiles": "開啟的檔案：{count}",
+    "close": "關閉",
+    "forceClose": "強制關閉",
+    "confirmTitle": "關閉 {name}？",
+    "confirmDescription": "MangoDisk 會先請求應用程式結束，讓它能儲存工作",
+    "forceConfirmTitle": "強制關閉 {name}？",
+    "forceConfirmDescription": "程序會立即結束，未儲存的資料可能遺失",
+    "closed": "程序已停止",
+    "stillRunning": "程序仍在執行，可以強制關閉"
   }
 }

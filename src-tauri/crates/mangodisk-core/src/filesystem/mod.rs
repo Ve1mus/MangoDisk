@@ -4,6 +4,7 @@ pub use scan_exclusions::ScanExclusionOptions;
 mod directory_selection;
 pub(crate) mod metadata;
 mod models;
+mod open_file_holders;
 pub(crate) mod permanent_delete;
 
 pub use directory_selection::{
@@ -12,3 +13,4 @@ pub use directory_selection::{
 pub use models::{
     DiskInfo, PermanentDeleteBatchResult, PermanentDeleteCandidate, PermanentDeleteFailure,
 };
+pub use open_file_holders::{OpenFileHolder, OpenFileHolderService, OpenFileHoldersResult};
