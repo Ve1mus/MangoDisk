@@ -62,6 +62,8 @@ describe('application shell layout', () => {
     expect(PRIMARY_NAV_GROUPS[2].items.map(item => item.id)).toEqual([
       PAGE_IDS.applicationUninstall,
       PAGE_IDS.startup,
+      PAGE_IDS.developerEnvironments,
+      PAGE_IDS.openFileHolders,
       PAGE_IDS.systemOptimization,
       PAGE_IDS.systemMaintenance,
     ]);
@@ -79,12 +81,23 @@ describe('application shell layout', () => {
     expect(isPageAvailableOnPlatform(PAGE_IDS.systemOptimization, 'linux')).toBe(false);
     expect(isPageAvailableOnPlatform(PAGE_IDS.systemMaintenance, 'linux')).toBe(true);
 
-    expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([PAGE_IDS.systemMaintenance]);
+    expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([
+      PAGE_IDS.developerEnvironments,
+      PAGE_IDS.systemMaintenance,
+    ]);
   });
 
-  it('keeps the complete navigation on supported desktop platforms', () => {
-    for (const platform of ['macos', 'windows']) {
-      expect(primaryNavGroupsForPlatform(platform)).toEqual(PRIMARY_NAV_GROUPS);
+  it('keeps the complete navigation on macOS', () => {
+    expect(primaryNavGroupsForPlatform('macos')).toEqual(PRIMARY_NAV_GROUPS);
+  });
+
+  it('hides the macOS-only Open Files workspace elsewhere', () => {
+    for (const platform of ['windows', 'linux']) {
+      expect(isPageAvailableOnPlatform(PAGE_IDS.openFileHolders, platform)).toBe(false);
     }
+    expect(primaryNavGroupsForPlatform('windows')[2]?.items.map(item => item.id)).not.toContain(
+      PAGE_IDS.openFileHolders
+    );
+    expect(isPageAvailableOnPlatform(PAGE_IDS.openFileHolders, 'macos')).toBe(true);
   });
 });

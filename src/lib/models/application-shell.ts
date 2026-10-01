@@ -65,6 +65,8 @@ export const PAGE_IDS = {
   applicationUninstall: 'application-uninstall',
   privacy: 'privacy',
   startup: 'startup',
+  developerEnvironments: 'developer-environments',
+  openFileHolders: 'open-file-holders',
   history: 'history',
   settings: 'settings',
 } as const;
@@ -77,12 +79,16 @@ const LINUX_UNAVAILABLE_PAGES: ReadonlySet<PageId> = new Set([
   PAGE_IDS.systemOptimization,
 ]);
 
+/** Pages backed by a macOS-only platform adapter (`lsof`). */
+const MACOS_ONLY_PAGES: ReadonlySet<PageId> = new Set([PAGE_IDS.openFileHolders]);
+
 /**
  * Keeps navigation aligned with capabilities that have an actual platform
  * implementation. Programmatic navigation uses the same boundary so tray and
  * window events cannot expose a non-functional workspace.
  */
 export function isPageAvailableOnPlatform(page: PageId, platform: string): boolean {
+  if (MACOS_ONLY_PAGES.has(page)) return platform === 'macos';
   return platform !== 'linux' || !LINUX_UNAVAILABLE_PAGES.has(page);
 }
 
@@ -108,6 +114,8 @@ export const PRIMARY_NAV_GROUPS = [
     items: [
       { id: PAGE_IDS.applicationUninstall, icon: ICON_NAMES.uninstall },
       { id: PAGE_IDS.startup, icon: ICON_NAMES.startup },
+      { id: PAGE_IDS.developerEnvironments, icon: ICON_NAMES.package },
+      { id: PAGE_IDS.openFileHolders, icon: ICON_NAMES.fileSearch },
       { id: PAGE_IDS.systemOptimization, icon: ICON_NAMES.systemOptimization },
       { id: PAGE_IDS.systemMaintenance, icon: ICON_NAMES.systemMaintenance },
     ],

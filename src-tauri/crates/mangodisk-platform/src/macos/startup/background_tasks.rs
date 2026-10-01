@@ -28,7 +28,10 @@ mod legacy;
 
 const SOURCE_ID: &str = "macos.background_tasks";
 const DATABASE_DIRECTORY: &str = "/var/db/com.apple.backgroundtaskmanagement";
-const SUPPORTED_ARCHIVE_VERSIONS: &[u64] = &[13];
+const SHARED_ARCHIVE_VERSION: u64 = 13;
+/// macOS 26 and later keep one `BackgroundItems-v18-<user GeneratedUID>.btm` per account
+/// and leave the shared v13 file behind as a stale snapshot.
+const USER_ARCHIVE_VERSION: u64 = 18;
 const MAX_DATABASE_BYTES: u64 = 8 * 1024 * 1024;
 const APP_RECORD_TYPE: u64 = 2;
 const DISPOSITION_ENABLED: u64 = 1;
@@ -44,7 +47,7 @@ pub(super) fn scan(cancellation: &PlatformCancellation) -> PlatformStartupSource
             started,
         );
     }
-    let (records, modified_at_ms) = match read_database_records(cancellation) {
+    let (records, modified_at_ms, native_removal) = match read_database_records(cancellation) {
         Ok(value) => value,
         Err(ParseError::Cancelled) => {
             return result(
@@ -57,7 +60,7 @@ pub(super) fn scan(cancellation: &PlatformCancellation) -> PlatformStartupSource
         Err(ParseError::AccessDenied) => {
             return unavailable(started, PlatformStartupCoverageReason::AccessDenied);
         }
-        Err(ParseError::Unsupported) => {
+        Err(ParseError::Unsupported | ParseError::NotFound) => {
             return unavailable(
                 started,
                 PlatformStartupCoverageReason::UnsupportedOperatingSystem,
@@ -75,6 +78,7 @@ pub(super) fn scan(cancellation: &PlatformCancellation) -> PlatformStartupSource
     });
     let removable = records
         .iter()
+        .filter(|_| native_removal)
         .filter_map(|record| {
             match_missing_item(record, &records, &missing_items)
                 .map(|item| (record.identifier.clone(), item))
@@ -114,6 +118,7 @@ enum ParseError {
     AccessDenied,
     Cancelled,
     InvalidData,
+    NotFound,
     Unsupported,
 }
 
@@ -199,29 +204,102 @@ fn native_item_id(uuid: [u8; 16]) -> u32 {
 }
 
 fn database_path() -> Option<(u64, PathBuf)> {
-    SUPPORTED_ARCHIVE_VERSIONS.first().map(|version| {
-        (
-            *version,
-            Path::new(DATABASE_DIRECTORY).join(format!("BackgroundItems-v{version}.btm")),
-        )
-    })
+    Some((
+        SHARED_ARCHIVE_VERSION,
+        Path::new(DATABASE_DIRECTORY)
+            .join(format!("BackgroundItems-v{SHARED_ARCHIVE_VERSION}.btm")),
+    ))
+}
+
+/// The current account's archive. Reading it first avoids presenting the stale shared file as
+/// the live list of "Allow in the Background" items.
+fn user_database_path() -> Option<PathBuf> {
+    static GENERATED_UID: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    let uid = GENERATED_UID
+        .get_or_init(current_user_generated_uid)
+        .as_deref()?;
+    let path = Path::new(DATABASE_DIRECTORY)
+        .join(format!("BackgroundItems-v{USER_ARCHIVE_VERSION}-{uid}.btm"));
+    path.is_file().then_some(path)
+}
+
+fn current_user_generated_uid() -> Option<String> {
+    use crate::{
+        run_controlled_command, ControlledCommandLimits, ControlledEnvironmentPolicy,
+        ControlledExecutable,
+    };
+
+    let user = std::env::var("USER").ok().filter(|user| {
+        !user.is_empty()
+            && user
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
+    })?;
+    let executable = ControlledExecutable::capture(Path::new("/usr/bin/dscl")).ok()?;
+    let record = format!("/Users/{user}");
+    let output = run_controlled_command(
+        "macos-user-generated-uid",
+        &executable,
+        &[".", "-read", record.as_str(), "GeneratedUID"],
+        ControlledEnvironmentPolicy::Inherit,
+        ControlledCommandLimits {
+            timeout: std::time::Duration::from_secs(3),
+            stdout_bytes: 4096,
+            stderr_bytes: 4096,
+        },
+        &|| false,
+    )
+    .ok()
+    .filter(|output| output.status.success())?;
+    parse_generated_uid(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Accepts only a canonical UUID so the value is safe to place in a file name.
+fn parse_generated_uid(output: &str) -> Option<String> {
+    let value = output.trim().strip_prefix("GeneratedUID:")?.trim();
+    let valid = value.len() == 36
+        && value.bytes().enumerate().all(|(index, byte)| match index {
+            8 | 13 | 18 | 23 => byte == b'-',
+            _ => byte.is_ascii_hexdigit(),
+        });
+    valid.then(|| value.to_ascii_uppercase())
 }
 
 fn read_database_records(
     cancellation: &PlatformCancellation,
-) -> Result<(Vec<BackgroundAppRecord>, Option<u64>), ParseError> {
+) -> Result<(Vec<BackgroundAppRecord>, Option<u64>, bool), ParseError> {
+    if let Some(path) = user_database_path() {
+        let (records, modified_at_ms) = read_archive(&path, USER_ARCHIVE_VERSION, cancellation)?;
+        // The v13 shared-list UUID mapping is not documented for v18, so native removal of
+        // orphan records stays unavailable and those items keep the system-managed fallback.
+        return Ok((records, modified_at_ms, false));
+    }
     let (version, path) = database_path().ok_or(ParseError::Unsupported)?;
-    let metadata = match fs::metadata(&path) {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            return legacy::read_records(cancellation);
+    match read_archive(&path, version, cancellation) {
+        Ok((records, modified_at_ms)) => Ok((records, modified_at_ms, true)),
+        Err(ParseError::NotFound) => {
+            legacy::read_records(cancellation).map(|(records, modified)| (records, modified, true))
         }
-        Err(error) => return Err(io_parse_error(error)),
-    };
+        Err(error) => Err(error),
+    }
+}
+
+fn read_archive(
+    path: &Path,
+    version: u64,
+    cancellation: &PlatformCancellation,
+) -> Result<(Vec<BackgroundAppRecord>, Option<u64>), ParseError> {
+    let metadata = fs::metadata(path).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            ParseError::NotFound
+        } else {
+            io_parse_error(error)
+        }
+    })?;
     if !metadata.is_file() || metadata.len() > MAX_DATABASE_BYTES {
         return Err(ParseError::InvalidData);
     }
-    let bytes = fs::read(&path).map_err(io_parse_error)?;
+    let bytes = fs::read(path).map_err(io_parse_error)?;
     let archive = Value::from_reader(Cursor::new(bytes)).map_err(|_| ParseError::InvalidData)?;
     let records = parse_archive(&archive, version, cancellation)?;
     Ok((records, metadata.modified().ok().and_then(system_time_ms)))
@@ -248,7 +326,13 @@ fn parse_archive(
         .get("$top")
         .and_then(Value::as_dictionary)
         .ok_or(ParseError::InvalidData)?;
-    if top.get("version").and_then(Value::as_unsigned_integer) != Some(expected_version) {
+    let version_matches = if expected_version == USER_ARCHIVE_VERSION {
+        // The per-user layout stores no version key; its schema is identified by `userStore`.
+        top.contains_key("userStore")
+    } else {
+        top.get("version").and_then(Value::as_unsigned_integer) == Some(expected_version)
+    };
+    if !version_matches {
         return Err(ParseError::Unsupported);
     }
     let objects = root
@@ -666,7 +750,7 @@ fn remove_record(
         ));
     }
     let cancellation = PlatformCancellation::new(|| false);
-    let (records, _) = read_database_records(&cancellation).map_err(|error| {
+    let (records, _, _) = read_database_records(&cancellation).map_err(|error| {
         PlatformError::operation_failed(format!("login record preflight read failed: {error:?}"))
     })?;
     let items = login_items::missing_items()?;
@@ -703,7 +787,7 @@ fn remove_record(
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let (remaining, _) = read_database_records(&cancellation).map_err(|error| {
+        let (remaining, _, _) = read_database_records(&cancellation).map_err(|error| {
             PlatformError::operation_failed(format!(
                 "login record verification read failed: {error:?}"
             ))
@@ -1095,13 +1179,57 @@ mod tests {
         assert!(match_missing_item(&record, std::slice::from_ref(&record), &[native]).is_none());
     }
 
+    fn user_store_archive(disposition: u64) -> Value {
+        let mut root = fixture_archive(disposition)
+            .into_dictionary()
+            .expect("the fixture archive is a dictionary");
+        root.insert("$top".to_owned(), dictionary([("userStore", uid(0))]));
+        Value::Dictionary(root)
+    }
+
+    #[test]
+    fn parses_the_per_user_archive_identified_by_its_user_store() {
+        let cancellation = PlatformCancellation::new(|| false);
+        let records =
+            parse_archive(&user_store_archive(11), USER_ARCHIVE_VERSION, &cancellation).unwrap();
+
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].bundle_identifier, "com.example.Example");
+        // The shared v13 reader must not accept a per-user archive, or the reverse.
+        assert_eq!(
+            parse_archive(
+                &user_store_archive(11),
+                SHARED_ARCHIVE_VERSION,
+                &cancellation
+            ),
+            Err(ParseError::Unsupported)
+        );
+        assert_eq!(
+            parse_archive(&fixture_archive(11), USER_ARCHIVE_VERSION, &cancellation),
+            Err(ParseError::Unsupported)
+        );
+    }
+
+    #[test]
+    fn generated_uid_must_be_a_canonical_uuid() {
+        assert_eq!(
+            parse_generated_uid("GeneratedUID: c931d9c7-1dbe-4ad4-b276-27b09972bbbb\n").as_deref(),
+            Some("C931D9C7-1DBE-4AD4-B276-27B09972BBBB")
+        );
+        assert_eq!(parse_generated_uid("GeneratedUID: ../../etc/passwd"), None);
+        assert_eq!(parse_generated_uid("GeneratedUID: C931D9C7"), None);
+        assert_eq!(
+            parse_generated_uid("Other: C931D9C7-1DBE-4AD4-B276-27B09972BBBB"),
+            None
+        );
+    }
+
     #[test]
     #[ignore = "requires a supported macOS background item database"]
     fn parses_the_installed_background_item_database() {
-        let (version, path) = database_path().expect("a supported background item database");
-        let archive = Value::from_file(path).expect("a readable background item database");
-        let records = parse_archive(&archive, version, &PlatformCancellation::new(|| false))
-            .expect("a supported background item schema");
+        let cancellation = PlatformCancellation::new(|| false);
+        let (records, _, _) =
+            read_database_records(&cancellation).expect("a supported background item schema");
 
         assert!(!records.is_empty());
     }

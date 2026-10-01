@@ -9,9 +9,13 @@ const maximumApplicationChunkBytes = 300 * 1024;
 // retaining the 60 KiB gzip limit on transferred locale assets.
 const maximumLocaleChunkBytes = 301 * 1024;
 const maximumLocaleGzipBytes = 60 * 1024;
-// Cyrillic uses two UTF-8 bytes per letter. Keep a measured, locale-specific
-// allowance instead of weakening the budget for every locale chunk.
-const localeChunkLimitOverrides = new Map([['ru-ru', { bytes: 380 * 1024, gzipBytes: 66 * 1024 }]]);
+// Cyrillic uses two UTF-8 bytes per letter and Japanese kana and kanji use three.
+// Keep a measured, locale-specific allowance instead of weakening the budget for
+// every locale chunk. Japanese measured 313 KB with the developer tools pages.
+const localeChunkLimitOverrides = new Map([
+  ['ja-jp', { bytes: 310 * 1024, gzipBytes: 60 * 1024 }],
+  ['ru-ru', { bytes: 380 * 1024, gzipBytes: 66 * 1024 }],
+]);
 
 function fail(message) {
   console.error(`[build-output] ${message}`);
