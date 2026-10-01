@@ -7,7 +7,8 @@ use std::{
 };
 
 use mangodisk_platform::{
-    current_platform, ApplicationComponentAggregate, ApplicationComponentAggregateError, Platform,
+    application_entitlements, current_platform, ApplicationComponentAggregate,
+    ApplicationComponentAggregateError, Platform,
 };
 use plist::Value;
 
@@ -28,6 +29,7 @@ use super::models::{
 
 const MAX_APPLICATION_CONTAINER_DEPTH: usize = 1;
 const PORTABLE_PROGRESS_ENTRY_BATCH: u64 = 4_096;
+const MAX_APPLICATION_GROUPS: usize = 16;
 
 struct Association {
     kind: ApplicationUninstallComponentKind,
@@ -116,7 +118,14 @@ pub(super) fn summarize_candidate(
     }
 
     let mut complete = true;
-    for association in exact_bundle_associations(home, &candidate.primary_identifier) {
+    for association in exact_bundle_associations(home, &candidate.primary_identifier)
+        .into_iter()
+        .chain(application_group_associations(
+            home,
+            &application_path,
+            &candidate.primary_identifier,
+        ))
+    {
         if !association.path.exists() {
             continue;
         }
@@ -492,12 +501,17 @@ pub(super) fn inspect_candidate(
     let mut associations = vec![Association {
         kind: ApplicationUninstallComponentKind::ApplicationBinary,
         risk: ApplicationUninstallRisk::Required,
-        path: application_path,
+        path: application_path.clone(),
         default_selected: true,
     }];
     if has_verified_bundle_identifier {
         associations.extend(exact_bundle_associations(
             home,
+            &candidate.primary_identifier,
+        ));
+        associations.extend(application_group_associations(
+            home,
+            &application_path,
             &candidate.primary_identifier,
         ));
     } else {
@@ -630,6 +644,21 @@ fn exact_bundle_associations(home: &Path, identifier: &str) -> Vec<Association> 
             library.join("HTTPStorages").join(identifier),
             true,
         ),
+        (
+            // Cookies carry signed-in sessions, so they stay opt-in.
+            ApplicationUninstallComponentKind::WebData,
+            ApplicationUninstallRisk::UserData,
+            library
+                .join("Cookies")
+                .join(format!("{identifier}.binarycookies")),
+            false,
+        ),
+        (
+            ApplicationUninstallComponentKind::ApplicationSupport,
+            ApplicationUninstallRisk::UserData,
+            library.join("Application Scripts").join(identifier),
+            false,
+        ),
     ]
     .into_iter()
     .map(|(kind, risk, path, default_selected)| Association {
@@ -639,6 +668,55 @@ fn exact_bundle_associations(home: &Path, identifier: &str) -> Vec<Association> 
         default_selected,
     })
     .collect()
+}
+
+/// Group Containers owned by the application, taken from its signed entitlements.
+///
+/// The entitlement list is the authoritative owner of a group folder. Group data
+/// may be shared with an installed companion application, so it is never
+/// preselected. Only groups named after the application's own identifier are
+/// offered: vendor "family" groups declared by several products stay out,
+/// because removing one product must not take shared data from its siblings.
+fn application_group_associations(
+    home: &Path,
+    application_path: &Path,
+    identifier: &str,
+) -> Vec<Association> {
+    group_associations(
+        home,
+        identifier,
+        application_entitlements::application_groups(application_path),
+    )
+}
+
+fn group_associations(home: &Path, identifier: &str, groups: Vec<String>) -> Vec<Association> {
+    let containers = home.join("Library/Group Containers");
+    groups
+        .into_iter()
+        .filter(|group| safe_bundle_identifier(group) && group_belongs_to(group, identifier))
+        .take(MAX_APPLICATION_GROUPS)
+        .map(|group| Association {
+            kind: ApplicationUninstallComponentKind::SandboxContainer,
+            risk: ApplicationUninstallRisk::UserData,
+            path: containers.join(group),
+            default_selected: false,
+        })
+        .collect()
+}
+
+/// A group belongs to an application when its name, minus the `group.` or Team ID
+/// prefix, is the bundle identifier or extends it with a dot-separated suffix.
+fn group_belongs_to(group: &str, identifier: &str) -> bool {
+    let name = group.strip_prefix("group.").or_else(|| {
+        let (team, name) = group.split_once('.')?;
+        (team.len() == 10 && team.bytes().all(|byte| byte.is_ascii_alphanumeric())).then_some(name)
+    });
+    name.is_some_and(|name| {
+        name == identifier
+            || name
+                .strip_prefix(identifier)
+                .is_some_and(|rest| rest.starts_with('.'))
+    })
 }
 
 fn bundle_identifier_matches(application_path: &Path, expected: &str) -> bool {
@@ -1056,6 +1134,76 @@ mod tests {
             .path
             .to_string_lossy()
             .contains("com.example.Editor")));
+    }
+
+    #[test]
+    fn exact_associations_include_cookies_and_application_scripts() {
+        let associations =
+            exact_bundle_associations(Path::new("/Users/example"), "com.example.Editor");
+        let paths = associations
+            .iter()
+            .map(|association| association.path.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(
+            &"/Users/example/Library/Cookies/com.example.Editor.binarycookies".to_string()
+        ));
+        assert!(paths.contains(
+            &"/Users/example/Library/Application Scripts/com.example.Editor".to_string()
+        ));
+        assert!(associations
+            .iter()
+            .filter(|association| association.risk == ApplicationUninstallRisk::UserData)
+            .all(|association| !association.default_selected));
+    }
+
+    #[test]
+    fn group_associations_keep_only_own_groups_and_are_never_preselected() {
+        let home = Path::new("/Users/example");
+        let associations = group_associations(
+            home,
+            "net.whatsapp.WhatsApp",
+            vec![
+                "group.net.whatsapp.WhatsApp.shared".to_string(),
+                "57T9237FN3.net.whatsapp.WhatsApp".to_string(),
+                "group.net.whatsapp.WhatsAppSMB.shared".to_string(),
+                "group.com.facebook.family".to_string(),
+                "../escape".to_string(),
+            ],
+        );
+        let paths = associations
+            .iter()
+            .map(|association| {
+                association
+                    .path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![
+                "group.net.whatsapp.WhatsApp.shared".to_string(),
+                "57T9237FN3.net.whatsapp.WhatsApp".to_string()
+            ]
+        );
+        assert!(associations
+            .iter()
+            .all(|association| !association.default_selected
+                && association.risk == ApplicationUninstallRisk::UserData));
+    }
+
+    #[test]
+    fn missing_application_has_no_group_associations() {
+        assert!(application_group_associations(
+            Path::new("/Users/example"),
+            Path::new("/Applications/Missing.app"),
+            "com.example.Missing"
+        )
+        .is_empty());
     }
 
     #[test]
