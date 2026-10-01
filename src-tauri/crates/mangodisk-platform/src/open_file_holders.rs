@@ -1,4 +1,4 @@
-//! Processes that hold a file, folder, or volume open.
+//! Processes that hold a file, folder, or volume open, or every process with any open file.
 //!
 //! macOS uses `lsof`, which reports only what the current user may inspect. A
 //! missing process is therefore not proof that nothing else holds the path.
@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use crate::{PlatformError, PlatformResult};
 
 /// Open-file names kept per process; the count still covers every match.
-pub const MAX_SAMPLE_PATHS: usize = 5;
+pub const MAX_SAMPLE_PATHS: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenFileHolder {
@@ -20,6 +20,53 @@ pub struct OpenFileHolder {
 
 #[cfg(target_os = "macos")]
 pub fn find(path: &Path) -> PlatformResult<Vec<OpenFileHolder>> {
+    let metadata = std::fs::symlink_metadata(path).map_err(|error| {
+        PlatformError::invalid_path(format!("open_file_holders_path_unreadable {error}"))
+    })?;
+    let target = path.to_string_lossy();
+    // `+D` walks a directory tree; a single file needs a plain name argument.
+    let arguments: Vec<&str> = if metadata.is_dir() {
+        vec!["-nP", "-w", "-F", "pcn", "+D", target.as_ref()]
+    } else {
+        vec!["-nP", "-w", "-F", "pcn", "--", target.as_ref()]
+    };
+    run_lsof(&arguments, LsofLimits::PATH)
+}
+
+/// Every process of the current account with at least one open file or folder.
+///
+/// Memory-mapped libraries, executables, and working directories are left out: each
+/// process maps hundreds of them, so they would bury the files a person recognizes.
+/// Sockets, pipes, and devices are left out for the same reason.
+#[cfg(target_os = "macos")]
+pub fn find_all() -> PlatformResult<Vec<OpenFileHolder>> {
+    run_lsof(
+        &["-nP", "-w", "-F", "pcnt", "-d", "^mem,^txt,^cwd,^rtd"],
+        LsofLimits::SYSTEM,
+    )
+}
+
+#[cfg(target_os = "macos")]
+struct LsofLimits {
+    timeout_secs: u64,
+    stdout_bytes: usize,
+}
+
+#[cfg(target_os = "macos")]
+impl LsofLimits {
+    const PATH: Self = Self {
+        timeout_secs: 20,
+        stdout_bytes: 8 * 1024 * 1024,
+    };
+    // A whole-system listing is a few megabytes on a busy desktop; leave headroom.
+    const SYSTEM: Self = Self {
+        timeout_secs: 60,
+        stdout_bytes: 64 * 1024 * 1024,
+    };
+}
+
+#[cfg(target_os = "macos")]
+fn run_lsof(arguments: &[&str], limits: LsofLimits) -> PlatformResult<Vec<OpenFileHolder>> {
     use std::time::Duration;
 
     use crate::{
@@ -35,24 +82,14 @@ pub fn find(path: &Path) -> PlatformResult<Vec<OpenFileHolder>> {
             ))
             .with_failure_reason(PlatformFailureReason::ToolUnavailable)
         })?;
-    let metadata = std::fs::symlink_metadata(path).map_err(|error| {
-        PlatformError::invalid_path(format!("open_file_holders_path_unreadable {error}"))
-    })?;
-    let target = path.to_string_lossy();
-    // `+D` walks a directory tree; a single file needs a plain name argument.
-    let arguments: Vec<&str> = if metadata.is_dir() {
-        vec!["-nP", "-w", "-F", "pcn", "+D", target.as_ref()]
-    } else {
-        vec!["-nP", "-w", "-F", "pcn", "--", target.as_ref()]
-    };
     let output = run_controlled_command(
         "macos-open-file-holders",
         &executable,
-        &arguments,
+        arguments,
         ControlledEnvironmentPolicy::Inherit,
         ControlledCommandLimits {
-            timeout: Duration::from_secs(20),
-            stdout_bytes: 8 * 1024 * 1024,
+            timeout: Duration::from_secs(limits.timeout_secs),
+            stdout_bytes: limits.stdout_bytes,
             stderr_bytes: 64 * 1024,
         },
         &|| false,
@@ -83,10 +120,20 @@ pub fn find(path: &Path) -> PlatformResult<Vec<OpenFileHolder>> {
 
 #[cfg(not(target_os = "macos"))]
 pub fn find(_path: &Path) -> PlatformResult<Vec<OpenFileHolder>> {
-    Err(PlatformError::new(
+    Err(unsupported())
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn find_all() -> PlatformResult<Vec<OpenFileHolder>> {
+    Err(unsupported())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn unsupported() -> PlatformError {
+    PlatformError::new(
         crate::PlatformErrorCode::Unsupported,
         "open file holders are not supported on this platform",
-    ))
+    )
 }
 
 /// Executable paths as `ps` reports them, which is the identity the process-close
@@ -142,11 +189,14 @@ fn parse_process_paths(output: &str) -> std::collections::HashMap<i32, PathBuf> 
         .collect()
 }
 
-/// Parses `lsof -F pcn` output: `p` starts a process, `c` names its command,
-/// and each `n` line is one open file. Other field lines are ignored.
+/// Parses `lsof -F pcn[t]` output: `p` starts a process, `c` names its command, and each
+/// `n` line is one open file. When the type field `t` is present, only regular files and
+/// directories count. Other field lines are ignored.
 #[cfg(any(target_os = "macos", test))]
 fn parse(output: &str) -> Vec<OpenFileHolder> {
     let mut holders: Vec<OpenFileHolder> = Vec::new();
+    // Each file descriptor is reported as `f`, then optionally `t`, then `n`.
+    let mut counts_as_file = true;
     for line in output.lines() {
         let Some(tag) = line.chars().next() else {
             continue;
@@ -169,7 +219,12 @@ fn parse(output: &str) -> Vec<OpenFileHolder> {
                     holder.command = value.to_string();
                 }
             }
+            'f' => counts_as_file = true,
+            't' => counts_as_file = matches!(value, "REG" | "DIR"),
             'n' => {
+                if !counts_as_file {
+                    continue;
+                }
                 if let Some(holder) = holders.last_mut() {
                     holder.open_file_count += 1;
                     if holder.sample_paths.len() < MAX_SAMPLE_PATHS
@@ -214,6 +269,21 @@ mod tests {
     }
 
     #[test]
+    fn typed_listings_count_only_regular_files_and_directories() {
+        let output = "p10\ncApp\nf3\ntREG\nn/a/file\nf4\ntunix\nn->0x2ec4\nf5\ntCHR\nn/dev/null\nf6\ntDIR\nn/a/dir\np20\ncSocketsOnly\nf1\ntIPv4\nn*:80\n";
+
+        let holders = parse(output);
+
+        assert_eq!(
+            holders.len(),
+            1,
+            "a process holding only sockets is not listed"
+        );
+        assert_eq!(holders[0].open_file_count, 2);
+        assert_eq!(holders[0].sample_paths, ["/a/file", "/a/dir"]);
+    }
+
+    #[test]
     fn ignores_processes_without_matching_files_and_malformed_lines() {
         let holders = parse("p10\ncIdle\np11\ncBusy\nn/a/b\nnot-a-field\n\nPx\np\n");
 
@@ -245,6 +315,23 @@ mod tests {
             paths[&42],
             PathBuf::from("/Applications/WPS Office.app/Contents/MacOS/wpsoffice")
         );
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn the_system_listing_includes_a_file_this_process_holds() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("held-system-wide.txt");
+        let handle = std::fs::File::create(&file).unwrap();
+
+        let holders = find_all().unwrap();
+        drop(handle);
+
+        let own = holders
+            .iter()
+            .find(|holder| holder.pid == std::process::id() as i32)
+            .expect("the test process is listed");
+        assert!(own.open_file_count >= 1);
     }
 
     #[test]

@@ -111,7 +111,8 @@
     "history": "操作履歴",
     "settings": "設定",
     "developer-environments": "開発環境",
-    "open-file-holders": "開いているファイル"
+    "open-file-holders": "開いているファイル",
+    "memory-analysis": "メモリ"
   },
   "fullDiskAccessGuidance": {
     "summary": "フルディスクアクセスを有効にして結果を充実させる",
@@ -4073,10 +4074,30 @@
         "dependency": "依存パッケージ",
         "unusedDependency": "未使用の依存パッケージ"
       },
-      "requiredBy": "依存元：{names}",
+      "requiredBy": "必要としているパッケージ ({count})",
       "versions": "バージョン：{versions}",
       "installedAt": "{date} にインストール",
-      "hint": "削除は Homebrew で行います。コマンドをコピーしてターミナルで実行してください。他のパッケージが必要としている場合、brew は削除を拒否します"
+      "hint": "アンインストールは Homebrew で実行されます。他のパッケージが必要としている場合、brew は削除を拒否します。コマンドをコピーしてターミナルで実行することもできます",
+      "idleTitle": "Homebrew パッケージを確認",
+      "idleDescription": "スキャンすると、インストール済みパッケージ、依存関係、削除できるものが一覧表示されます",
+      "dependsOn": "依存先 ({count})",
+      "dependsOnCount": "依存先 {count} 件",
+      "requiredByCount": "必要としているパッケージ {count} 件",
+      "noRelations": "なし",
+      "blocked": "先に {names} をアンインストールしてください。このパッケージを必要としています",
+      "uninstall": "アンインストール",
+      "uninstallTitle": "{name} をアンインストールしますか？",
+      "uninstallDescription": "Homebrew がこのコンピュータからパッケージを削除します。この操作は元に戻せません",
+      "uninstallSummary": "解放される容量の目安",
+      "formulaNote": "このパッケージだけが必要としていたパッケージはインストールされたまま残り、未使用の依存関係として表示されます",
+      "caskNote": "一部の cask には管理者パスワードが必要です。Homebrew が完了できない場合は、コピーしたコマンドをターミナルで実行してください",
+      "notices": {
+        "removed": "{name} をアンインストールし、{size} を解放しました",
+        "notInstalled": "{name} はすでにアンインストールされています",
+        "stillRequired": "{names} が必要としているため、{name} はアンインストールされませんでした",
+        "stillInstalled": "Homebrew は終了しましたが、{name} はまだインストールされています",
+        "failed": "Homebrew で {name} をアンインストールできませんでした。コマンドをコピーしてターミナルで実行すると理由を確認できます"
+      }
     },
     "python": {
       "emptyTitle": "仮想環境が見つかりません",
@@ -4093,21 +4114,38 @@
       "files": "{count} ファイル",
       "createdAt": "{date} に作成",
       "reveal": "ファイルマネージャで表示",
-      "hint": "プロジェクトがない環境やホームフォルダ直下の環境は、不要であるか、誤ってグローバルにインストールされた可能性が高いです"
-    }
+      "hint": "プロジェクトがない環境やホームフォルダ直下の環境は、不要であるか、誤ってグローバルにインストールされた可能性が高いです",
+      "idleTitle": "Python 環境を探す",
+      "idleDescription": "ホームフォルダをスキャンして、忘れられた環境や壊れた環境を含む Python 仮想環境を探します",
+      "delete": "削除",
+      "deleteTitle": "{name} を削除しますか？",
+      "deleteDescription": "{path} とその中身がすべて完全に削除されます。再び必要になったら、パッケージマネージャーで作り直してください",
+      "deleteSummary": "解放される容量の目安",
+      "deleteNote": "削除されるのは環境フォルダのみで、プロジェクトのファイルには触れません",
+      "toolManagedNote": "この環境はツールが管理しており、必要に応じて再作成される場合があります",
+      "notices": {
+        "removed": "{name} を削除し、{size} を解放しました",
+        "notFound": "{name} はすでに存在しません",
+        "notAnEnvironment": "{name} は仮想環境ではないため、そのまま残しました",
+        "outsideScope": "{name} は MangoDisk が管理するフォルダの外にあるため、そのまま残しました",
+        "unexpectedContents": "{name} には、プロジェクトのファイルなど仮想環境が作成しないファイルが含まれているため、そのまま残しました",
+        "failed": "{name} を完全には削除できませんでした。使用しているプログラムを閉じてからやり直してください"
+      }
+    },
+    "scan": "スキャン",
+    "removing": "削除中…"
   },
   "openFileHolders": {
     "title": "開いているファイル",
-    "subtitle": "ファイル、フォルダ、ボリュームを開いたままにしているアプリを探します",
+    "subtitle": "ファイルを開いたままにしているアプリを確認し、ファイル・フォルダ・ボリュームを使用中のものを探します",
     "pathLabel": "パス",
-    "pathPlaceholder": "/Volumes/ディスク または /Users/あなた/フォルダ",
+    "pathPlaceholder": "任意: 探したいファイル、フォルダ、ボリューム",
     "chooseFolder": "フォルダを選択",
     "find": "検索",
     "searching": "検索中…",
     "emptyTitle": "このパスを使用しているプロセスはありません",
     "emptyDescription": "確認できるプロセスの中に、これを開いているものはありません",
-    "visibilityNotice": "表示されるのはあなたのアカウントのプロセスのみです。他のユーザーやシステムのプロセスが使用している可能性もあります",
-    "helper": "補助プロセス：{command}",
+    "visibilityNotice": "表示されるのはあなたのアカウントのプロセスのみです。他のユーザーやシステムのプロセスがファイルを開いている可能性もあります",
     "pid": "PID {pid}",
     "openFiles": "開いているファイル：{count}",
     "close": "閉じる",
@@ -4117,6 +4155,61 @@
     "forceConfirmTitle": "{name} を強制終了しますか？",
     "forceConfirmDescription": "プロセスは直ちに終了し、未保存のデータは失われる可能性があります",
     "closed": "プロセスが停止しました",
-    "stillRunning": "プロセスはまだ実行中です。強制終了できます"
+    "stillRunning": "プロセスはまだ実行中です。強制終了できます",
+    "searchAgain": "再検索",
+    "idleTitle": "ファイルを開いているアプリを確認",
+    "idleDescription": "検索すると、ファイルを開いているすべてのアプリと、そのプロセスや開いているファイルが表示されます。パスを入力すると、それを使用中のものだけを探せます",
+    "emptyAllTitle": "開いているファイルはありません",
+    "emptyAllDescription": "確認できるプロセスにファイルを開いているものはありません",
+    "summary": "アプリ {applications} 件 · プロセス {processes} 件 · 開いているファイル {files} 件",
+    "holdingPath": "{path} を使用中",
+    "processCount": "{count} プロセス",
+    "moreFiles": "他 {count} 件",
+    "helperBadge": "ヘルパー"
+  },
+  "memoryAnalysis": {
+    "title": "メモリ",
+    "subtitle": "RAM を使っているものと、終了すべきアプリを確認します",
+    "refresh": "更新",
+    "analyzing": "メモリを分析中…",
+    "idleTitle": "メモリを使っているものを調べる",
+    "idleDescription": "MangoDisk はメモリの内訳を調べ、システムが圧縮またはディスクへ退避したメモリも含めて、使用量の多いアプリ順に表示します",
+    "analyze": "メモリを分析",
+    "barLabel": "メモリの使われ方",
+    "categories": {
+      "application": "アプリのメモリ",
+      "wired": "ワイヤードメモリ",
+      "compressed": "圧縮",
+      "cached": "キャッシュされたファイル",
+      "free": "空き"
+    },
+    "categoryHints": {
+      "application": "実行中のアプリが確保しているメモリ",
+      "wired": "圧縮やディスクへの退避ができないシステムメモリ",
+      "compressed": "空きを作るために圧縮された非アクティブなメモリ。アプリが復帰するときに CPU を使います",
+      "cached": "高速化のため保持されている最近使ったファイル。必要になると解放されます",
+      "free": "使われていないメモリ"
+    },
+    "pressure": {
+      "label": "メモリプレッシャー",
+      "normal": "正常",
+      "warning": "高め",
+      "critical": "危険"
+    },
+    "swap": "スワップ: {used} / {total}",
+    "findings": {
+      "pressureCritical": "メモリプレッシャーが危険な状態です。動作が遅くなる前に、下の大きなアプリを終了してください",
+      "pressureWarning": "メモリプレッシャーが高めです。下の大きなアプリを終了すると改善します",
+      "swapInUse": "{size} 分のメモリ内容がディスクに退避されています (スワップ)。読み戻す際にアプリの動作が遅く感じられます",
+      "heavyCompression": "{size} のメモリが圧縮されています。アプリが RAM に収まらない量のデータを保持しています"
+    },
+    "consumersTitle": "メモリ使用量順のアプリ",
+    "metricFootprint": "メモリフットプリント",
+    "metricResident": "常駐メモリ",
+    "footprintHint": "フットプリントにはシステムが圧縮またはディスクへ退避したメモリも含まれるため、合計が RAM を超えることがあります。アプリの順位付けにお使いください",
+    "noConsumers": "メモリ使用量を報告したアプリはありません",
+    "moreProcesses": "他の小さなプロセス {count} 件",
+    "approximateHint": "一部のプロセスはフットプリントを読み取れないため、常駐サイズを使用しています (≈)",
+    "pid": "PID {pid}"
   }
 }

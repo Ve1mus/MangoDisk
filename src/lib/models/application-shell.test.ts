@@ -64,6 +64,7 @@ describe('application shell layout', () => {
       PAGE_IDS.startup,
       PAGE_IDS.developerEnvironments,
       PAGE_IDS.openFileHolders,
+      PAGE_IDS.memoryAnalysis,
       PAGE_IDS.systemOptimization,
       PAGE_IDS.systemMaintenance,
     ]);
@@ -83,6 +84,7 @@ describe('application shell layout', () => {
 
     expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([
       PAGE_IDS.developerEnvironments,
+      PAGE_IDS.memoryAnalysis,
       PAGE_IDS.systemMaintenance,
     ]);
   });

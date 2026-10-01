@@ -1,12 +1,19 @@
-//! Read-only inventory of developer-installed software: Homebrew packages and
-//! Python virtual environments. Nothing here deletes or modifies anything; the
-//! results help a user decide what to remove with the tool that owns it.
+//! Inventory of developer-installed software (Homebrew packages and Python virtual
+//! environments) and the removal of items the user picks from it. Scans only read.
+//! A Homebrew package is removed by `brew` itself, which owns its links and
+//! metadata; a Python environment is deleted after strict re-validation.
 mod homebrew;
 mod python_environments;
 mod tree_size;
 
-pub use homebrew::{HomebrewInventory, HomebrewPackage, HomebrewPackageKind};
-pub use python_environments::{PythonEnvironment, PythonEnvironmentScan};
+pub use homebrew::{
+    HomebrewInventory, HomebrewPackage, HomebrewPackageKind, HomebrewUninstallOutcome,
+    HomebrewUninstallResult,
+};
+pub use python_environments::{
+    PythonEnvironment, PythonEnvironmentDeleteOutcome, PythonEnvironmentDeleteResult,
+    PythonEnvironmentScan,
+};
 
 use crate::CoreResult;
 
@@ -21,6 +28,17 @@ impl DeveloperEnvironmentService {
 
     pub fn scan_python_environments() -> CoreResult<PythonEnvironmentScan> {
         python_environments::scan()
+    }
+
+    pub fn uninstall_homebrew_package(
+        name: String,
+        kind: HomebrewPackageKind,
+    ) -> CoreResult<HomebrewUninstallResult> {
+        homebrew::uninstall(name, kind)
+    }
+
+    pub fn delete_python_environment(path: String) -> CoreResult<PythonEnvironmentDeleteResult> {
+        python_environments::delete(path)
     }
 }
 

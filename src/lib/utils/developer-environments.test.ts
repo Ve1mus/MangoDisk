@@ -17,6 +17,7 @@ const formula = (overrides: Partial<HomebrewPackage> = {}): HomebrewPackage => (
   installedAtMs: null,
   installedOnRequest: true,
   requiredBy: [],
+  dependencies: [],
   path: '/opt/homebrew/Cellar/wget',
   ...overrides,
 });

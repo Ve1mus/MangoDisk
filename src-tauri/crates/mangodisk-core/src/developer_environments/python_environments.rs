@@ -13,7 +13,13 @@ use mangodisk_platform::{current_platform, Platform};
 use serde::Serialize;
 
 use super::tree_size;
-use crate::{CoreError, CoreResult};
+use crate::{
+    filesystem::{
+        metadata::diagnostic_path,
+        permanent_delete::{delete_path_permanently, prepare_path_for_permanent_delete},
+    },
+    CoreError, CoreResult,
+};
 
 const MAX_DEPTH: usize = 8;
 const MAX_DIRECTORIES: u64 = 400_000;
@@ -53,6 +59,29 @@ const TOOL_MANAGED_FRAGMENTS: [&str; 5] = [
     ".pyenv/versions",
 ];
 
+/// Everything a `venv`, `virtualenv`, `uv`, or `pipenv` environment creates at its top level.
+/// A directory holding anything else is a project that happens to contain `pyvenv.cfg`,
+/// so it is never removed as an environment.
+const ENVIRONMENT_TOP_LEVEL_ENTRIES: [&str; 17] = [
+    "bin",
+    "lib",
+    "lib64",
+    "local",
+    "include",
+    "share",
+    "etc",
+    "man",
+    "Scripts",
+    "Lib",
+    "Include",
+    "pyvenv.cfg",
+    ".gitignore",
+    "CACHEDIR.TAG",
+    ".lock",
+    ".Python",
+    ".DS_Store",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PythonEnvironment {
@@ -89,6 +118,144 @@ pub(super) fn scan() -> CoreResult<PythonEnvironmentScan> {
         .map_err(|error| CoreError::operation_failed(error.to_string()))?;
     let home = user_directories.home_directory().to_path_buf();
     Ok(scan_root(&home, &home))
+}
+
+/// Why an environment was or was not removed, for the UI to explain without parsing text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PythonEnvironmentDeleteOutcome {
+    Removed,
+    /// The directory no longer exists, so there is nothing left to remove.
+    NotFound,
+    /// No `pyvenv.cfg`, or the path is a link or not a directory.
+    NotAnEnvironment,
+    /// Outside the home folder or inside a location the scan never searches.
+    OutsideScope,
+    /// Holds files a virtual environment does not create, such as a project's sources.
+    UnexpectedContents,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PythonEnvironmentDeleteResult {
+    pub schema_version: u32,
+    pub path: String,
+    pub outcome: PythonEnvironmentDeleteOutcome,
+    pub released_bytes: u64,
+    pub removed_file_count: u64,
+}
+
+/// Permanently removes one virtual environment found by [`scan`].
+///
+/// Everything is re-validated here, not trusted from the earlier scan, because the
+/// path arrives from the UI and the disk may have changed since.
+pub(super) fn delete(path: String) -> CoreResult<PythonEnvironmentDeleteResult> {
+    let user_directories = current_platform()
+        .user_directories()
+        .map_err(|error| CoreError::operation_failed(error.to_string()))?;
+    delete_in(user_directories.home_directory(), Path::new(&path))
+}
+
+fn delete_in(home: &Path, path: &Path) -> CoreResult<PythonEnvironmentDeleteResult> {
+    if !path.is_absolute() {
+        return Err(CoreError::invalid_input("path must be absolute"));
+    }
+    let result = |outcome, released_bytes, removed_file_count| PythonEnvironmentDeleteResult {
+        schema_version: super::DEVELOPER_ENVIRONMENTS_SCHEMA_VERSION,
+        path: path.to_string_lossy().into_owned(),
+        outcome,
+        released_bytes,
+        removed_file_count,
+    };
+    let rejected = |outcome: PythonEnvironmentDeleteOutcome| {
+        log::warn!(
+            "python_environment_delete_rejected path={} outcome={outcome:?}",
+            diagnostic_path(path)
+        );
+        Ok(result(outcome, 0, 0))
+    };
+    if !is_within_scan_scope(home, path) {
+        return rejected(PythonEnvironmentDeleteOutcome::OutsideScope);
+    }
+    let Ok(metadata) = fs::symlink_metadata(path) else {
+        return Ok(result(PythonEnvironmentDeleteOutcome::NotFound, 0, 0));
+    };
+    if !metadata.is_dir() || !path.join("pyvenv.cfg").is_file() {
+        return rejected(PythonEnvironmentDeleteOutcome::NotAnEnvironment);
+    }
+    if !has_only_environment_entries(path) {
+        return rejected(PythonEnvironmentDeleteOutcome::UnexpectedContents);
+    }
+    let started = Instant::now();
+    let size = tree_size::measure(path);
+    let outcome = prepare_path_for_permanent_delete(path)
+        .and_then(|prepared| delete_path_permanently(prepared, size.bytes, size.file_count));
+    match outcome {
+        Ok(()) => {
+            log::info!(
+                "python_environment_deleted path={} released_bytes={} file_count={} elapsed_ms={}",
+                diagnostic_path(path),
+                size.bytes,
+                size.file_count,
+                started.elapsed().as_millis()
+            );
+            Ok(result(
+                PythonEnvironmentDeleteOutcome::Removed,
+                size.bytes,
+                size.file_count,
+            ))
+        }
+        Err(error) => {
+            log::warn!(
+                "python_environment_delete_failed path={} partial={} released_bytes={} error={}",
+                diagnostic_path(path),
+                error.is_partial(),
+                error.released_bytes(),
+                mangodisk_platform::diagnostics::text(&error)
+            );
+            Ok(result(
+                PythonEnvironmentDeleteOutcome::Failed,
+                error.released_bytes(),
+                error.affected_item_count(),
+            ))
+        }
+    }
+}
+
+/// The same boundary the scan searches: strictly below home, not in a skipped directory, and
+/// reachable through plain path components only.
+fn is_within_scan_scope(home: &Path, path: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(home) else {
+        return false;
+    };
+    let mut depth = 0_usize;
+    for component in relative.components() {
+        let std::path::Component::Normal(name) = component else {
+            return false;
+        };
+        if SKIPPED_DIRECTORIES
+            .iter()
+            .any(|skipped| name == std::ffi::OsStr::new(skipped))
+        {
+            return false;
+        }
+        depth += 1;
+    }
+    (1..=MAX_DEPTH).contains(&depth)
+}
+
+fn has_only_environment_entries(directory: &Path) -> bool {
+    let Ok(mut entries) = fs::read_dir(directory) else {
+        return false;
+    };
+    entries.all(|entry| {
+        entry.is_ok_and(|entry| {
+            ENVIRONMENT_TOP_LEVEL_ENTRIES
+                .iter()
+                .any(|allowed| entry.file_name() == std::ffi::OsStr::new(allowed))
+        })
+    })
 }
 
 fn scan_root(root: &Path, home: &Path) -> PythonEnvironmentScan {
@@ -319,6 +486,109 @@ mod tests {
             Path::new("/Users/example/projects/app/.venv"),
             home
         ));
+    }
+
+    #[test]
+    fn deletes_an_environment_and_reports_what_was_released() {
+        let home = tempfile::tempdir().unwrap();
+        let venv = home.path().join("work/.venv");
+        environment(&venv, "version = 3.12.0\n");
+
+        let result = delete_in(home.path(), &venv).unwrap();
+
+        assert_eq!(result.outcome, PythonEnvironmentDeleteOutcome::Removed);
+        assert!(result.released_bytes >= 64);
+        assert!(!venv.exists());
+        assert!(
+            home.path().join("work").exists(),
+            "only the environment goes"
+        );
+    }
+
+    #[test]
+    fn refuses_anything_that_is_not_a_plain_environment_below_home() {
+        let home = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        environment(&outside.path().join(".venv"), "version = 3.12.0\n");
+        // A project that was initialised with `python -m venv .` keeps its sources beside pyvenv.cfg.
+        let project = home.path().join("project");
+        environment(&project, "version = 3.12.0\n");
+        fs::create_dir_all(project.join("src")).unwrap();
+        // Skipped locations are never treated as user environments.
+        let cached = home.path().join("Library/Caches/x/.venv");
+        environment(&cached, "version = 3.12.0\n");
+        let plain = home.path().join("plain");
+        fs::create_dir_all(&plain).unwrap();
+
+        let outcome = |path: &Path| delete_in(home.path(), path).unwrap().outcome;
+
+        assert_eq!(
+            outcome(home.path()),
+            PythonEnvironmentDeleteOutcome::OutsideScope
+        );
+        assert_eq!(
+            outcome(&outside.path().join(".venv")),
+            PythonEnvironmentDeleteOutcome::OutsideScope
+        );
+        assert_eq!(
+            outcome(&cached),
+            PythonEnvironmentDeleteOutcome::OutsideScope
+        );
+        assert_eq!(
+            outcome(&home.path().join("project/../project")),
+            PythonEnvironmentDeleteOutcome::OutsideScope
+        );
+        assert_eq!(
+            outcome(&project),
+            PythonEnvironmentDeleteOutcome::UnexpectedContents
+        );
+        assert_eq!(
+            outcome(&plain),
+            PythonEnvironmentDeleteOutcome::NotAnEnvironment
+        );
+        assert_eq!(
+            outcome(&home.path().join("missing")),
+            PythonEnvironmentDeleteOutcome::NotFound
+        );
+        assert!(project.join("src").exists() && cached.exists());
+        assert!(delete_in(home.path(), Path::new("relative/.venv")).is_err());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn removing_an_environment_never_follows_its_links() {
+        let home = tempfile::tempdir().unwrap();
+        let interpreter = tempfile::tempdir().unwrap();
+        fs::write(interpreter.path().join("python3"), "binary").unwrap();
+        let venv = home.path().join(".venv");
+        environment(&venv, "version = 3.12.0\n");
+        fs::create_dir_all(venv.join("bin")).unwrap();
+        std::os::unix::fs::symlink(interpreter.path().join("python3"), venv.join("bin/python"))
+            .unwrap();
+        std::os::unix::fs::symlink(interpreter.path(), venv.join("include")).unwrap();
+
+        let result = delete_in(home.path(), &venv).unwrap();
+
+        assert_eq!(result.outcome, PythonEnvironmentDeleteOutcome::Removed);
+        assert!(interpreter.path().join("python3").exists());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn a_linked_environment_root_is_not_removed() {
+        let home = tempfile::tempdir().unwrap();
+        let target = tempfile::tempdir().unwrap();
+        environment(&target.path().join("real"), "version = 3.12.0\n");
+        let link = home.path().join("linked");
+        std::os::unix::fs::symlink(target.path().join("real"), &link).unwrap();
+
+        let result = delete_in(home.path(), &link).unwrap();
+
+        assert_eq!(
+            result.outcome,
+            PythonEnvironmentDeleteOutcome::NotAnEnvironment
+        );
+        assert!(target.path().join("real/pyvenv.cfg").exists());
     }
 
     #[test]
