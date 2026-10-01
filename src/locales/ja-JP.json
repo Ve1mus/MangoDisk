@@ -2423,7 +2423,8 @@
       "enUS": "English",
       "zhTW": "繁體中文",
       "jaJP": "日本語",
-      "koKR": "한국어"
+      "koKR": "한국어",
+      "ruRU": "Русский"
     },
     "themeTitle": "テーマ",
     "themeDescription": "ライト、ダーク、またはシステムテーマを使用",
