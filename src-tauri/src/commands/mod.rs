@@ -4,6 +4,7 @@ pub(crate) mod app_distribution;
 pub(crate) mod app_updates;
 pub(crate) mod applications;
 pub(crate) mod cleanup;
+pub(crate) mod developer_environments;
 pub(crate) mod disk;
 pub(crate) mod duplicate_files;
 pub(crate) mod error;

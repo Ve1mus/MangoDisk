@@ -1,6 +1,7 @@
 pub mod ai;
 mod applications;
 mod cleanup;
+mod developer_environments;
 mod filesystem;
 mod history;
 pub mod http_client;
@@ -52,6 +53,10 @@ pub use cleanup::{
     CLEANUP_PLAN_SCHEMA_VERSION, CUSTOM_CLEANUP_RULE_SCHEMA_VERSION,
 };
 pub use cleanup::{CleanupPlanService, CleanupScanService, CleanupService};
+pub use developer_environments::{
+    DeveloperEnvironmentService, HomebrewInventory, HomebrewPackage, HomebrewPackageKind,
+    PythonEnvironment, PythonEnvironmentScan,
+};
 pub use filesystem::{
     metadata::diagnostic_path, DirectorySelectionOutcome, DirectorySelectionService, DiskInfo,
     PermanentDeleteBatchResult, PermanentDeleteCandidate, PermanentDeleteFailure,
