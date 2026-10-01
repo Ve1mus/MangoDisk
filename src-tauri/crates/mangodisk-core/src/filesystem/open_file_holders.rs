@@ -123,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn refuses_to_close_a_process_that_does_not_hold_the_path() {
         let directory = tempfile::tempdir().unwrap();
 

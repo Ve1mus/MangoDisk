@@ -283,7 +283,7 @@ mod tests {
         let find = |suffix: &str| {
             scan.environments
                 .iter()
-                .find(|item| item.path.ends_with(suffix))
+                .find(|item| Path::new(&item.path).ends_with(suffix))
                 .unwrap_or_else(|| panic!("missing {suffix}"))
         };
 

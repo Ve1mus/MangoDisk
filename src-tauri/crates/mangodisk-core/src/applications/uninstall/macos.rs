@@ -1138,18 +1138,24 @@ mod tests {
 
     #[test]
     fn exact_associations_include_cookies_and_application_scripts() {
-        let associations =
-            exact_bundle_associations(Path::new("/Users/example"), "com.example.Editor");
+        let home = Path::new("/Users/example");
+        let associations = exact_bundle_associations(home, "com.example.Editor");
         let paths = associations
             .iter()
-            .map(|association| association.path.to_string_lossy().into_owned())
+            .map(|association| association.path.clone())
             .collect::<Vec<_>>();
 
         assert!(paths.contains(
-            &"/Users/example/Library/Cookies/com.example.Editor.binarycookies".to_string()
+            &home
+                .join("Library")
+                .join("Cookies")
+                .join("com.example.Editor.binarycookies")
         ));
         assert!(paths.contains(
-            &"/Users/example/Library/Application Scripts/com.example.Editor".to_string()
+            &home
+                .join("Library")
+                .join("Application Scripts")
+                .join("com.example.Editor")
         ));
         assert!(associations
             .iter()

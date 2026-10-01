@@ -50,7 +50,8 @@ pub fn application_groups(_application: &Path) -> Vec<String> {
     Vec::new()
 }
 
-#[cfg(any(target_os = "macos", test))]
+// `plist` is a macOS-only dependency of this crate.
+#[cfg(target_os = "macos")]
 fn groups_from_entitlements(entitlements: &[u8]) -> Vec<String> {
     let Some(dictionary) = plist::Value::from_reader(std::io::Cursor::new(entitlements))
         .ok()
@@ -71,7 +72,7 @@ fn groups_from_entitlements(entitlements: &[u8]) -> Vec<String> {
     groups
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
 
