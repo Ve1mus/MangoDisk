@@ -6,10 +6,11 @@ import { LanguageService } from '@/lib/services/language-service';
 import enUS from '@/locales/en-US.json';
 import jaJP from '@/locales/ja-JP.json';
 import koKR from '@/locales/ko-KR.json';
+import ruRU from '@/locales/ru-RU.json';
 import zhCN from '@/locales/zh-CN.json';
 import zhTW from '@/locales/zh-TW.json';
 
-const localeResources = [zhCN, zhTW, jaJP, koKR, enUS];
+const localeResources = [zhCN, zhTW, jaJP, koKR, ruRU, enUS];
 
 function leafKeys(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [prefix];
@@ -102,6 +103,7 @@ describe('i18n resources', () => {
       [LANGUAGE_IDS.enUS]: 'Open',
       [LANGUAGE_IDS.jaJP]: '開く',
       [LANGUAGE_IDS.koKR]: '열기',
+      [LANGUAGE_IDS.ruRU]: 'Открыть',
       [LANGUAGE_IDS.zhCN]: '打开',
       [LANGUAGE_IDS.zhTW]: '開啟',
     };
@@ -119,6 +121,25 @@ describe('i18n resources', () => {
     expect(LanguageService.resolveSupportedLanguage(['ja-JP'])).toBe(LANGUAGE_IDS.jaJP);
     expect(LanguageService.resolveSupportedLanguage(['ko-KR', 'en-US'])).toBe(LANGUAGE_IDS.koKR);
     expect(LanguageService.resolveSupportedLanguage(['ko'])).toBe(LANGUAGE_IDS.koKR);
+    expect(LanguageService.resolveSupportedLanguage(['ru-RU', 'en-US'])).toBe(LANGUAGE_IDS.ruRU);
+    expect(LanguageService.resolveSupportedLanguage(['ru'])).toBe(LANGUAGE_IDS.ruRU);
+  });
+
+  it('detects and renders Russian with native plural forms', () => {
+    expect(LanguageService.resolveSupportedLanguage(['ru-RU', 'en-US'])).toBe('ru-RU');
+    expect(i18n.global.availableLocales).toContain('ru-RU');
+
+    i18n.global.locale.value = 'ru-RU' as typeof i18n.global.locale.value;
+    expect(i18n.global.t('common.open')).toBe('Открыть');
+    expect(i18n.global.t('common.fileCount', { count: 0 }, 0)).toBe('0 файлов');
+    expect(i18n.global.t('common.fileCount', { count: 1 }, 1)).toBe('1 файл');
+    expect(i18n.global.t('common.fileCount', { count: 2 }, 2)).toBe('2 файла');
+    expect(i18n.global.t('common.fileCount', { count: 5 }, 5)).toBe('5 файлов');
+    expect(i18n.global.t('common.fileCount', { count: 11 }, 11)).toBe('11 файлов');
+    expect(i18n.global.t('common.fileCount', { count: 21 }, 21)).toBe('21 файл');
+    expect(i18n.global.t('common.fileCount', { count: 22 }, 22)).toBe('22 файла');
+    expect(i18n.global.t('common.fileCount', { count: 25 }, 25)).toBe('25 файлов');
+    expect(i18n.global.t('cleanup.applicationComponentCount', { count: 0 }, 0)).toBe('Нет элементов для оптимизации');
   });
 
   it('applies interpolation and pluralization for the active locale', () => {
@@ -137,5 +158,10 @@ describe('i18n resources', () => {
 
     i18n.global.locale.value = LANGUAGE_IDS.koKR;
     expect(i18n.global.t('common.fileCount', { count: 2 }, 2)).toBe('2개 파일');
+
+    i18n.global.locale.value = LANGUAGE_IDS.ruRU;
+    expect(i18n.global.t('common.fileCount', { count: 1 }, 1)).toBe('1 файл');
+    expect(i18n.global.t('common.fileCount', { count: 2 }, 2)).toBe('2 файла');
+    expect(i18n.global.t('common.fileCount', { count: 5 }, 5)).toBe('5 файлов');
   });
 });

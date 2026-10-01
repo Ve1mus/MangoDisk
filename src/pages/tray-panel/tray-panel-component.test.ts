@@ -20,6 +20,7 @@ import zhCN from '@/locales/zh-CN.json';
 import zhTW from '@/locales/zh-TW.json';
 import jaJP from '@/locales/ja-JP.json';
 import koKR from '@/locales/ko-KR.json';
+import ruRU from '@/locales/ru-RU.json';
 
 import TrayPanelPage from './index.vue';
 import MemoryOverview from './components/md-memory-overview.vue';
@@ -270,6 +271,7 @@ describe('monitoring panel interactions', () => {
     ['zh-TW', zhTW, '結束'],
     ['ja-JP', jaJP, '終了'],
     ['ko-KR', koKR, '종료'],
+    ['ru-RU', ruRU, 'Выйти'],
   ] as const)('renders the localized quit action in %s', async (_locale, messages, expected) => {
     const { wrapper } = render(TrayPanelPage, {}, false, messages);
     await flushPromises();

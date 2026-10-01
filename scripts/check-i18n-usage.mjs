@@ -15,6 +15,7 @@ const localePaths = [
   'src/locales/en-US.json',
   'src/locales/ja-JP.json',
   'src/locales/ko-KR.json',
+  'src/locales/ru-RU.json',
 ];
 const sourceExtensions = new Set(['.ts', '.vue']);
 
