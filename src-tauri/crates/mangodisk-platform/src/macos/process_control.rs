@@ -1,7 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    ffi::OsStr,
-    os::unix::ffi::OsStrExt,
     path::{Path, PathBuf},
     thread,
     time::{Duration, Instant},
@@ -25,11 +23,20 @@ const GRACEFUL_CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
 const FORCE_CLOSE_TIMEOUT: Duration = Duration::from_secs(2);
 const CLOSE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
+/// Kernel start time of a process. A reused PID always reports a different value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ProcessStartTime {
+    seconds: u64,
+    microseconds: u64,
+}
+
 #[derive(Debug, Clone)]
 struct ProcessInstance {
     pid: i32,
     executable_path: PathBuf,
     display_name: String,
+    /// Captured when the process is matched; `None` fails the signal guard closed.
+    start_time: Option<ProcessStartTime>,
 }
 
 pub(super) fn close(
@@ -73,6 +80,12 @@ pub(super) fn close_many(
         .map(|(target, error)| {
             if error.is_none() {
                 matching_processes_in_snapshot(target, &initial_snapshot)
+                    .into_iter()
+                    .map(|process| ProcessInstance {
+                        start_time: process_start_time(process.pid),
+                        ..process
+                    })
+                    .collect()
             } else {
                 Vec::new()
             }
@@ -181,11 +194,38 @@ fn request_close(process: &ProcessInstance, mode: ApplicationProcessCloseMode) -
     })
 }
 
+/// Guards against PID reuse between the snapshot and the signal.
+///
+/// The check compares the kernel start time instead of the executable path:
+/// `ps` reports the path the process was launched with, while `proc_pidpath`
+/// reports the live image. They legitimately differ when an application
+/// runs from a staged updater copy that was later removed, and a path check
+/// would then permanently refuse to close that process.
 fn can_signal_process(process: &ProcessInstance) -> bool {
     process.pid > 0
         && process.pid != std::process::id() as i32
-        && current_executable_path(process.pid)
-            .is_some_and(|path| normalize_path(&path) == normalize_path(&process.executable_path))
+        && process.start_time.is_some()
+        && process_start_time(process.pid) == process.start_time
+}
+
+fn process_start_time(pid: i32) -> Option<ProcessStartTime> {
+    // SAFETY: `proc_bsdinfo` is plain data, so the zeroed value is valid, and
+    // the kernel writes at most `size` bytes into it.
+    let mut info: libc::proc_bsdinfo = unsafe { std::mem::zeroed() };
+    let size = std::mem::size_of::<libc::proc_bsdinfo>() as libc::c_int;
+    let written = unsafe {
+        libc::proc_pidinfo(
+            pid,
+            libc::PROC_PIDTBSDINFO,
+            0,
+            (&mut info as *mut libc::proc_bsdinfo).cast(),
+            size,
+        )
+    };
+    (written == size).then_some(ProcessStartTime {
+        seconds: info.pbi_start_tvsec,
+        microseconds: info.pbi_start_tvusec,
+    })
 }
 
 #[cfg(test)]
@@ -251,22 +291,6 @@ fn snapshot_error_results(
                 .unwrap_or_else(|| snapshot_error.clone()))
         })
         .collect()
-}
-
-fn current_executable_path(pid: i32) -> Option<PathBuf> {
-    let mut buffer = vec![0_u8; libc::PROC_PIDPATHINFO_MAXSIZE as usize];
-    let length = unsafe {
-        libc::proc_pidpath(
-            pid,
-            buffer.as_mut_ptr().cast(),
-            libc::PROC_PIDPATHINFO_MAXSIZE as u32,
-        )
-    };
-    if length <= 0 {
-        return None;
-    }
-    buffer.truncate(length as usize);
-    Some(PathBuf::from(OsStr::from_bytes(&buffer)))
 }
 
 fn process_matches_path(process: &ProcessInstance, target_path: &Path) -> bool {
@@ -336,6 +360,7 @@ fn parse_process_line(line: &str) -> Option<ProcessInstance> {
         pid,
         executable_path,
         display_name,
+        start_time: None,
     })
 }
 
@@ -368,17 +393,46 @@ mod tests {
 
     static PROCESS_CLOSE_TEST_LOCK: Mutex<()> = Mutex::new(());
 
+    fn instance(pid: i32, start_time: Option<ProcessStartTime>) -> ProcessInstance {
+        ProcessInstance {
+            pid,
+            executable_path: PathBuf::from("/Applications/Test.app/Contents/MacOS/Test"),
+            display_name: "Test".to_owned(),
+            start_time,
+        }
+    }
+
     #[test]
-    fn refuses_self_and_stale_executable_identity() {
-        let mut process = ProcessInstance {
-            pid: std::process::id() as i32,
-            executable_path: std::env::current_exe().unwrap(),
-            display_name: "test".to_owned(),
+    fn refuses_self_and_unverifiable_identity() {
+        let own = std::process::id() as i32;
+        assert!(!can_signal_process(&instance(own, process_start_time(own))));
+        let parent = unsafe { libc::getppid() };
+        assert!(
+            !can_signal_process(&instance(parent, None)),
+            "a process without a captured start time must fail closed"
+        );
+    }
+
+    #[test]
+    fn start_time_guard_accepts_the_live_process_and_rejects_a_reused_pid() {
+        let parent = unsafe { libc::getppid() };
+        let start = process_start_time(parent).expect("the parent process should be inspectable");
+        assert!(can_signal_process(&instance(parent, Some(start))));
+        let reused = ProcessStartTime {
+            seconds: start.seconds.wrapping_add(1),
+            ..start
         };
-        assert!(!can_signal_process(&process));
-        process.pid = unsafe { libc::getppid() };
+        assert!(!can_signal_process(&instance(parent, Some(reused))));
+    }
+
+    #[test]
+    fn stale_launch_path_does_not_block_a_live_process() {
+        // Regression: an updater-staged copy leaves `ps` reporting a path that
+        // differs from the live image, which used to veto every close request.
+        let parent = unsafe { libc::getppid() };
+        let mut process = instance(parent, process_start_time(parent));
         process.executable_path = PathBuf::from("/nonexistent/changed-executable");
-        assert!(!can_signal_process(&process));
+        assert!(can_signal_process(&process));
     }
 
     #[test]
@@ -396,6 +450,7 @@ mod tests {
             pid: 42,
             executable_path: PathBuf::from("/Applications/WPS Office.app/Contents/MacOS/wpsoffice"),
             display_name: "wpsoffice".to_string(),
+            start_time: None,
         };
         assert!(process_matches_path(
             &process,
@@ -409,6 +464,7 @@ mod tests {
             pid: 42,
             executable_path: PathBuf::from("/Applications/Other.app/Contents/MacOS/SharedHelper"),
             display_name: "SharedHelper".to_string(),
+            start_time: None,
         }];
         let target = ApplicationProcessTarget {
             executable_names: vec!["SharedHelper".to_string()],
@@ -428,6 +484,7 @@ mod tests {
                 "/System/Applications/Podcasts.app/Contents/XPCServices/PodcastSync.xpc/Contents/MacOS/PodcastSync",
             ),
             display_name: "PodcastSync".to_string(),
+            start_time: None,
         }];
         let target = ApplicationProcessTarget {
             executable_names: vec!["Podcasts".to_string()],
@@ -449,6 +506,7 @@ mod tests {
                 "/Applications/Podcasts Utility.app/Contents/MacOS/Podcasts Utility",
             ),
             display_name: "Podcasts Utility".to_string(),
+            start_time: None,
         }];
         let target = ApplicationProcessTarget {
             executable_names: vec!["Podcasts".to_string()],
