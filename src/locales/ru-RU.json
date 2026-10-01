@@ -565,7 +565,7 @@
         "description": "Просматривать скрытые элементы прямо в Finder"
       },
       "macos_finder_show-posix-path": {
-        "name": "Показывать полные пути в заголовках Finker",
+        "name": "Показывать полные пути в заголовках Finder",
         "description": "Показывать полный путь текущей папки в заголовке окна"
       },
       "macos_finder_disable-animations": {
@@ -1201,7 +1201,7 @@
         "description": "Закрыть очередь печати автоматически, когда работы не осталось"
       },
       "macos_finder_default-list-view": {
-        "name": "Использовать просмотр списка по умолчанию в Finker",
+        "name": "Использовать просмотр списка по умолчанию в Finder",
         "description": "Использовать вид списка для папок без сохранённых настроек просмотра"
       },
       "macos_finder_folders-first-on-desktop": {
