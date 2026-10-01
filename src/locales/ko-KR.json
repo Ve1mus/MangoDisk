@@ -111,7 +111,8 @@
     "history": "작업 기록",
     "settings": "설정",
     "developer-environments": "개발 환경",
-    "open-file-holders": "열려 있는 파일"
+    "open-file-holders": "열려 있는 파일",
+    "memory-analysis": "메모리"
   },
   "fullDiskAccessGuidance": {
     "summary": "전체 디스크 접근 권한을 켜서 더 완전한 결과 보기",
@@ -4073,10 +4074,30 @@
         "dependency": "종속 패키지",
         "unusedDependency": "사용되지 않는 종속 패키지"
       },
-      "requiredBy": "필요로 하는 패키지: {names}",
+      "requiredBy": "이 패키지를 필요로 하는 항목 ({count})",
       "versions": "버전: {versions}",
       "installedAt": "{date} 설치",
-      "hint": "제거는 Homebrew로 진행합니다. 명령을 복사해 터미널에서 실행하세요. 다른 패키지가 필요로 하면 brew가 제거를 거부합니다"
+      "hint": "제거는 Homebrew로 실행되며, 다른 패키지가 필요로 하면 brew가 제거를 거부합니다. 명령을 복사해 터미널에서 실행할 수도 있습니다",
+      "idleTitle": "Homebrew 패키지 살펴보기",
+      "idleDescription": "검색하면 설치된 패키지, 서로의 의존 관계, 제거할 수 있는 항목을 보여 줍니다",
+      "dependsOn": "의존하는 항목 ({count})",
+      "dependsOnCount": "의존 {count}개",
+      "requiredByCount": "필요로 하는 항목 {count}개",
+      "noRelations": "없음",
+      "blocked": "먼저 {names}을(를) 제거하세요. 아직 이 패키지를 필요로 합니다",
+      "uninstall": "제거",
+      "uninstallTitle": "{name}을(를) 제거할까요?",
+      "uninstallDescription": "Homebrew가 이 컴퓨터에서 패키지를 제거합니다. 이 작업은 되돌릴 수 없습니다",
+      "uninstallSummary": "확보되는 공간(약)",
+      "formulaNote": "이 패키지만 필요로 하던 패키지는 설치된 상태로 남고 사용하지 않는 의존 항목으로 표시됩니다",
+      "caskNote": "일부 cask는 관리자 암호가 필요합니다. Homebrew가 끝내지 못하면 복사한 명령을 터미널에서 실행하세요",
+      "notices": {
+        "removed": "{name}을(를) 제거하여 {size}을(를) 확보했습니다",
+        "notInstalled": "{name}은(는) 이미 제거되었습니다",
+        "stillRequired": "{names}이(가) 아직 필요로 하므로 {name}을(를) 제거하지 않았습니다",
+        "stillInstalled": "Homebrew가 끝났지만 {name}이(가) 여전히 설치되어 있습니다",
+        "failed": "Homebrew로 {name}을(를) 제거하지 못했습니다. 명령을 복사해 터미널에서 실행하면 이유를 확인할 수 있습니다"
+      }
     },
     "python": {
       "emptyTitle": "가상 환경을 찾을 수 없습니다",
@@ -4093,21 +4114,38 @@
       "files": "파일 {count}개",
       "createdAt": "{date} 생성",
       "reveal": "파일 관리자에서 보기",
-      "hint": "프로젝트가 없거나 홈 폴더 바로 아래에 있는 환경은 필요 없거나 실수로 전역 설치되었을 가능성이 가장 높습니다"
-    }
+      "hint": "프로젝트가 없거나 홈 폴더 바로 아래에 있는 환경은 필요 없거나 실수로 전역 설치되었을 가능성이 가장 높습니다",
+      "idleTitle": "Python 환경 찾기",
+      "idleDescription": "홈 폴더에서 잊힌 환경과 손상된 환경을 포함한 Python 가상 환경을 검색합니다",
+      "delete": "삭제",
+      "deleteTitle": "{name}을(를) 삭제할까요?",
+      "deleteDescription": "{path}과(와) 그 안의 모든 내용이 영구적으로 삭제됩니다. 다시 필요하면 패키지 관리자로 새로 만드세요",
+      "deleteSummary": "확보되는 공간(약)",
+      "deleteNote": "환경 폴더만 삭제되며 프로젝트 파일은 건드리지 않습니다",
+      "toolManagedNote": "이 환경은 도구가 관리하며 필요할 때 다시 만들 수 있습니다",
+      "notices": {
+        "removed": "{name}을(를) 삭제하여 {size}을(를) 확보했습니다",
+        "notFound": "{name}은(는) 더 이상 존재하지 않습니다",
+        "notAnEnvironment": "{name}은(는) 가상 환경이 아니므로 그대로 두었습니다",
+        "outsideScope": "{name}은(는) MangoDisk가 관리하는 폴더 밖에 있으므로 그대로 두었습니다",
+        "unexpectedContents": "{name}에 프로젝트 파일처럼 가상 환경이 만들지 않는 파일이 들어 있어 그대로 두었습니다",
+        "failed": "{name}을(를) 완전히 삭제하지 못했습니다. 사용 중인 프로그램을 닫고 다시 시도하세요"
+      }
+    },
+    "scan": "검색",
+    "removing": "제거 중…"
   },
   "openFileHolders": {
     "title": "열려 있는 파일",
-    "subtitle": "파일, 폴더 또는 볼륨을 열어 둔 앱을 찾습니다",
+    "subtitle": "파일을 열어 둔 앱을 확인하거나, 파일·폴더·볼륨을 사용 중인 항목을 찾습니다",
     "pathLabel": "경로",
-    "pathPlaceholder": "/Volumes/디스크 또는 /Users/사용자/폴더",
+    "pathPlaceholder": "선택 사항: 찾을 파일, 폴더 또는 볼륨",
     "chooseFolder": "폴더 선택",
     "find": "찾기",
     "searching": "찾는 중…",
     "emptyTitle": "이 경로를 사용하는 프로세스가 없습니다",
     "emptyDescription": "확인할 수 있는 프로세스 중 이 경로를 연 것이 없습니다",
-    "visibilityNotice": "내 계정의 프로세스만 표시됩니다. 다른 사용자나 시스템의 프로세스도 이 경로를 사용 중일 수 있습니다",
-    "helper": "보조 프로세스: {command}",
+    "visibilityNotice": "내 계정의 프로세스만 표시됩니다. 다른 사용자나 시스템의 프로세스도 파일을 열고 있을 수 있습니다",
     "pid": "PID {pid}",
     "openFiles": "열린 파일: {count}",
     "close": "닫기",
@@ -4117,6 +4155,61 @@
     "forceConfirmTitle": "{name}을(를) 강제 종료할까요?",
     "forceConfirmDescription": "프로세스가 즉시 종료되며 저장하지 않은 데이터가 손실될 수 있습니다",
     "closed": "프로세스가 중지되었습니다",
-    "stillRunning": "프로세스가 아직 실행 중입니다. 강제 종료할 수 있습니다"
+    "stillRunning": "프로세스가 아직 실행 중입니다. 강제 종료할 수 있습니다",
+    "searchAgain": "다시 찾기",
+    "idleTitle": "파일을 열어 둔 앱 확인하기",
+    "idleDescription": "찾기를 누르면 열린 파일이 있는 모든 앱과 해당 프로세스, 열려 있는 파일이 표시됩니다. 경로를 입력하면 그 경로를 사용 중인 항목만 찾습니다",
+    "emptyAllTitle": "열린 파일이 없습니다",
+    "emptyAllDescription": "확인할 수 있는 프로세스 중 열린 파일이 있는 것이 없습니다",
+    "summary": "앱 {applications}개 · 프로세스 {processes}개 · 열린 파일 {files}개",
+    "holdingPath": "{path} 사용 중",
+    "processCount": "프로세스 {count}개",
+    "moreFiles": "외 {count}개",
+    "helperBadge": "도우미"
+  },
+  "memoryAnalysis": {
+    "title": "메모리",
+    "subtitle": "RAM을 차지하는 항목과 종료할 앱을 확인합니다",
+    "refresh": "새로 고침",
+    "analyzing": "메모리 분석 중…",
+    "idleTitle": "메모리를 차지하는 항목 찾기",
+    "idleDescription": "MangoDisk가 메모리 분포를 측정하고, 시스템이 압축하거나 디스크로 옮긴 메모리까지 포함해 사용량이 많은 앱 순으로 보여 줍니다",
+    "analyze": "메모리 분석",
+    "barLabel": "메모리 사용 현황",
+    "categories": {
+      "application": "앱 메모리",
+      "wired": "와이어드",
+      "compressed": "압축됨",
+      "cached": "캐시된 파일",
+      "free": "여유"
+    },
+    "categoryHints": {
+      "application": "실행 중인 앱이 차지한 메모리",
+      "wired": "압축하거나 디스크로 옮길 수 없는 시스템 메모리",
+      "compressed": "공간을 만들기 위해 압축된 비활성 메모리. 앱이 다시 활성화되면 CPU를 사용합니다",
+      "cached": "속도를 위해 보관한 최근 사용 파일. 공간이 필요하면 해제됩니다",
+      "free": "사용하지 않는 메모리"
+    },
+    "pressure": {
+      "label": "메모리 압력",
+      "normal": "보통",
+      "warning": "높음",
+      "critical": "위험"
+    },
+    "swap": "스왑: {used} / {total}",
+    "findings": {
+      "pressureCritical": "메모리 압력이 위험 수준입니다. 느려지기 전에 아래의 큰 앱을 종료하세요",
+      "pressureWarning": "메모리 압력이 높습니다. 아래의 큰 앱 하나를 종료하면 도움이 됩니다",
+      "swapInUse": "메모리 내용 {size}이(가) 디스크(스왑)로 옮겨졌습니다. 시스템이 다시 읽어 와야 할 때 앱이 느려집니다",
+      "heavyCompression": "메모리 {size}이(가) 압축되어 있습니다. 앱이 RAM에 다 들어가지 않는 양의 데이터를 쥐고 있습니다"
+    },
+    "consumersTitle": "메모리 사용량 순 앱",
+    "metricFootprint": "메모리 풋프린트",
+    "metricResident": "상주 메모리",
+    "footprintHint": "풋프린트에는 시스템이 압축하거나 디스크로 옮긴 메모리도 포함되므로 합계가 RAM보다 클 수 있습니다. 앱 순위를 매기는 용도로 활용하세요",
+    "noConsumers": "메모리 사용량을 보고한 앱이 없습니다",
+    "moreProcesses": "그 외 작은 프로세스 {count}개",
+    "approximateHint": "일부 프로세스는 풋프린트를 읽을 수 없어 상주 크기를 사용합니다 (≈)",
+    "pid": "PID {pid}"
   }
 }

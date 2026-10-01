@@ -67,6 +67,7 @@ export const PAGE_IDS = {
   startup: 'startup',
   developerEnvironments: 'developer-environments',
   openFileHolders: 'open-file-holders',
+  memoryAnalysis: 'memory-analysis',
   history: 'history',
   settings: 'settings',
 } as const;
@@ -116,6 +117,7 @@ export const PRIMARY_NAV_GROUPS = [
       { id: PAGE_IDS.startup, icon: ICON_NAMES.startup },
       { id: PAGE_IDS.developerEnvironments, icon: ICON_NAMES.package },
       { id: PAGE_IDS.openFileHolders, icon: ICON_NAMES.fileSearch },
+      { id: PAGE_IDS.memoryAnalysis, icon: ICON_NAMES.memory },
       { id: PAGE_IDS.systemOptimization, icon: ICON_NAMES.systemOptimization },
       { id: PAGE_IDS.systemMaintenance, icon: ICON_NAMES.systemMaintenance },
     ],

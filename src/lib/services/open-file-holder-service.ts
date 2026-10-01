@@ -4,11 +4,16 @@ import type { ApplicationCloseBatchResult, ApplicationCloseMode } from '@/lib/mo
 import type { OpenFileHoldersResult } from '@/lib/models/open-file-holders';
 
 export class OpenFileHolderService {
-  static find(path: string): Promise<OpenFileHoldersResult> {
+  /** A null path lists every application of the account that holds any file open. */
+  static find(path: string | null): Promise<OpenFileHoldersResult> {
     return invoke<OpenFileHoldersResult>('find_open_file_holders', { path });
   }
 
-  static close(path: string, executablePath: string, mode: ApplicationCloseMode): Promise<ApplicationCloseBatchResult> {
-    return invoke<ApplicationCloseBatchResult>('close_open_file_holder', { path, executablePath, mode });
+  static close(
+    path: string | null,
+    executablePaths: string[],
+    mode: ApplicationCloseMode
+  ): Promise<ApplicationCloseBatchResult> {
+    return invoke<ApplicationCloseBatchResult>('close_open_file_holders', { path, executablePaths, mode });
   }
 }

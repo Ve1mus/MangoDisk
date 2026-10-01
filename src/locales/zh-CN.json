@@ -111,7 +111,8 @@
     "history": "操作历史",
     "settings": "设置",
     "developer-environments": "开发环境",
-    "open-file-holders": "打开的文件"
+    "open-file-holders": "打开的文件",
+    "memory-analysis": "内存"
   },
   "fullDiskAccessGuidance": {
     "summary": "开启完全磁盘访问，获取更完整结果",
@@ -4073,10 +4074,30 @@
         "dependency": "依赖项",
         "unusedDependency": "未使用的依赖项"
       },
-      "requiredBy": "被以下软件包需要：{names}",
+      "requiredBy": "被依赖 ({count})",
       "versions": "版本：{versions}",
       "installedAt": "安装于 {date}",
-      "hint": "请使用 Homebrew 卸载。复制命令后在终端中运行；如果其他软件包仍需要它，brew 会拒绝卸载"
+      "hint": "卸载通过 Homebrew 执行，如果其他软件包仍需要它，brew 会拒绝卸载。你也可以复制命令后在终端中运行",
+      "idleTitle": "查看 Homebrew 软件包",
+      "idleDescription": "扫描后会列出已安装的软件包、它们之间的依赖关系，以及可以卸载的软件包",
+      "dependsOn": "依赖 ({count})",
+      "dependsOnCount": "依赖 {count} 个",
+      "requiredByCount": "被 {count} 个依赖",
+      "noRelations": "无",
+      "blocked": "请先卸载 {names}，它们仍然需要此软件包",
+      "uninstall": "卸载",
+      "uninstallTitle": "卸载 {name}？",
+      "uninstallDescription": "Homebrew 会从这台电脑上移除该软件包。此操作无法撤销",
+      "uninstallSummary": "预计释放",
+      "formulaNote": "只有它需要的软件包会继续保留，并显示为未使用的依赖",
+      "caskNote": "部分 cask 需要管理员密码。如果 Homebrew 无法完成，请在终端中运行复制的命令",
+      "notices": {
+        "removed": "已卸载 {name}，释放了 {size}",
+        "notInstalled": "{name} 已经卸载",
+        "stillRequired": "{name} 未被卸载，因为 {names} 仍然需要它",
+        "stillInstalled": "Homebrew 已结束，但 {name} 仍处于安装状态",
+        "failed": "Homebrew 无法卸载 {name}。复制命令并在终端中运行即可查看原因"
+      }
     },
     "python": {
       "emptyTitle": "未找到虚拟环境",
@@ -4093,21 +4114,38 @@
       "files": "{count} 个文件",
       "createdAt": "创建于 {date}",
       "reveal": "在文件管理器中显示",
-      "hint": "没有项目或直接放在主文件夹中的环境，最可能是不再需要的，或是误装成了全局环境"
-    }
+      "hint": "没有项目或直接放在主文件夹中的环境，最可能是不再需要的，或是误装成了全局环境",
+      "idleTitle": "查找 Python 环境",
+      "idleDescription": "扫描主文件夹中的 Python 虚拟环境，包括被遗忘和已损坏的环境",
+      "delete": "删除",
+      "deleteTitle": "删除 {name}？",
+      "deleteDescription": "{path} 及其中的所有内容将被永久删除。需要时可用包管理器重新创建",
+      "deleteSummary": "预计释放",
+      "deleteNote": "只会删除环境文件夹，不会触碰你的项目文件",
+      "toolManagedNote": "此环境由工具管理，需要时可能会被重新创建",
+      "notices": {
+        "removed": "已删除 {name}，释放了 {size}",
+        "notFound": "{name} 已不存在",
+        "notAnEnvironment": "{name} 不是虚拟环境，已保留",
+        "outsideScope": "{name} 位于 MangoDisk 管理的文件夹之外，已保留",
+        "unexpectedContents": "{name} 包含虚拟环境不会创建的文件（如项目文件），已保留",
+        "failed": "{name} 未能完全删除。请关闭正在使用它的程序后重试"
+      }
+    },
+    "scan": "扫描",
+    "removing": "正在移除…"
   },
   "openFileHolders": {
     "title": "打开的文件",
-    "subtitle": "查找哪些应用正在占用文件、文件夹或磁盘卷",
+    "subtitle": "查看哪些应用保持文件打开，或查找占用文件、文件夹或磁盘卷的程序",
     "pathLabel": "路径",
-    "pathPlaceholder": "/Volumes/磁盘 或 /Users/你/文件夹",
+    "pathPlaceholder": "可选：要查找的文件、文件夹或磁盘卷",
     "chooseFolder": "选择文件夹",
     "find": "查找",
     "searching": "正在查找…",
     "emptyTitle": "没有进程占用此路径",
     "emptyDescription": "你能检查的进程中没有打开它的",
-    "visibilityNotice": "仅列出你账户下的进程。其他用户或系统的进程也可能占用该路径",
-    "helper": "辅助进程：{command}",
+    "visibilityNotice": "仅列出你账户下的进程。其他用户或系统的进程也可能打开了文件",
     "pid": "PID {pid}",
     "openFiles": "打开的文件：{count}",
     "close": "关闭",
@@ -4117,6 +4155,61 @@
     "forceConfirmTitle": "强制关闭 {name}？",
     "forceConfirmDescription": "进程会立即结束，未保存的数据可能丢失",
     "closed": "进程已停止",
-    "stillRunning": "进程仍在运行，可以强制关闭"
+    "stillRunning": "进程仍在运行，可以强制关闭",
+    "searchAgain": "重新查找",
+    "idleTitle": "查看哪些应用保持文件打开",
+    "idleDescription": "查找会列出所有打开了文件的应用，以及它们的进程和所占用的文件。输入路径则只查找占用该路径的程序",
+    "emptyAllTitle": "没有找到打开的文件",
+    "emptyAllDescription": "可检查的进程中没有打开文件的进程",
+    "summary": "{applications} 个应用 · {processes} 个进程 · {files} 个打开的文件",
+    "holdingPath": "占用 {path}",
+    "processCount": "{count} 个进程",
+    "moreFiles": "另有 {count} 个",
+    "helperBadge": "辅助进程"
+  },
+  "memoryAnalysis": {
+    "title": "内存",
+    "subtitle": "查看是什么占用了内存，以及该关闭哪些应用",
+    "refresh": "刷新",
+    "analyzing": "正在分析内存…",
+    "idleTitle": "找出占用内存的程序",
+    "idleDescription": "MangoDisk 会测量内存的去向，并按占用量对应用排序，包括系统已压缩或转移到磁盘的内存",
+    "analyze": "分析内存",
+    "barLabel": "内存使用情况",
+    "categories": {
+      "application": "应用内存",
+      "wired": "联动内存",
+      "compressed": "已压缩",
+      "cached": "缓存的文件",
+      "free": "空闲"
+    },
+    "categoryHints": {
+      "application": "正在运行的应用占用的内存",
+      "wired": "无法压缩或转移到磁盘的系统内存",
+      "compressed": "为腾出空间而压缩的不活跃内存；应用被唤醒时会消耗 CPU",
+      "cached": "为提速而保留的最近使用的文件；需要空间时会释放",
+      "free": "未使用的内存"
+    },
+    "pressure": {
+      "label": "内存压力",
+      "normal": "正常",
+      "warning": "偏高",
+      "critical": "严重"
+    },
+    "swap": "交换空间：已用 {used}，共 {total}",
+    "findings": {
+      "pressureCritical": "内存压力已达严重级别。请关闭下方占用最多的应用，以免卡顿",
+      "pressureWarning": "内存压力偏高。关闭下方占用最多的应用之一会有帮助",
+      "swapInUse": "有 {size} 的内存内容被转移到了磁盘（交换）。系统需要把它读回时，应用会变慢",
+      "heavyCompression": "有 {size} 的内存被压缩。你的应用持有的数据超过了内存容量"
+    },
+    "consumersTitle": "按内存占用排序的应用",
+    "metricFootprint": "内存占用量",
+    "metricResident": "驻留内存",
+    "footprintHint": "占用量包含系统已压缩或转移到磁盘的内存，因此总和可能超过物理内存。请用它来比较应用",
+    "noConsumers": "没有应用报告内存占用",
+    "moreProcesses": "另有 {count} 个较小的进程",
+    "approximateHint": "部分进程不允许读取其占用量，因此改用驻留大小 (≈)",
+    "pid": "PID {pid}"
   }
 }

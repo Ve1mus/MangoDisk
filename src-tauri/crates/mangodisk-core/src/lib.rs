@@ -55,7 +55,8 @@ pub use cleanup::{
 pub use cleanup::{CleanupPlanService, CleanupScanService, CleanupService};
 pub use developer_environments::{
     DeveloperEnvironmentService, HomebrewInventory, HomebrewPackage, HomebrewPackageKind,
-    PythonEnvironment, PythonEnvironmentScan,
+    HomebrewUninstallOutcome, HomebrewUninstallResult, PythonEnvironment,
+    PythonEnvironmentDeleteOutcome, PythonEnvironmentDeleteResult, PythonEnvironmentScan,
 };
 pub use filesystem::{
     metadata::diagnostic_path, DirectorySelectionOutcome, DirectorySelectionService, DiskInfo,

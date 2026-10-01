@@ -111,7 +111,8 @@
     "history": "操作紀錄",
     "settings": "設定",
     "developer-environments": "開發環境",
-    "open-file-holders": "開啟的檔案"
+    "open-file-holders": "開啟的檔案",
+    "memory-analysis": "記憶體"
   },
   "fullDiskAccessGuidance": {
     "summary": "開啟完整磁碟存取，取得更完整的結果",
@@ -4073,10 +4074,30 @@
         "dependency": "相依項目",
         "unusedDependency": "未使用的相依項目"
       },
-      "requiredBy": "被下列套件需要：{names}",
+      "requiredBy": "被相依 ({count})",
       "versions": "版本：{versions}",
       "installedAt": "安裝於 {date}",
-      "hint": "請使用 Homebrew 解除安裝。複製指令後在終端機中執行；若其他套件仍需要它，brew 會拒絕移除"
+      "hint": "解除安裝透過 Homebrew 執行，若其他套件仍需要它，brew 會拒絕移除。你也可以複製指令後在終端機中執行",
+      "idleTitle": "檢視 Homebrew 套件",
+      "idleDescription": "掃描後會列出已安裝的套件、彼此的相依關係，以及可以解除安裝的套件",
+      "dependsOn": "相依 ({count})",
+      "dependsOnCount": "相依 {count} 個",
+      "requiredByCount": "被 {count} 個相依",
+      "noRelations": "無",
+      "blocked": "請先解除安裝 {names}，它們仍然需要此套件",
+      "uninstall": "解除安裝",
+      "uninstallTitle": "解除安裝 {name}？",
+      "uninstallDescription": "Homebrew 會從這台電腦移除該套件。此操作無法復原",
+      "uninstallSummary": "預計釋放",
+      "formulaNote": "只有它需要的套件會繼續保留，並顯示為未使用的相依項目",
+      "caskNote": "部分 cask 需要管理員密碼。若 Homebrew 無法完成，請在終端機中執行複製的指令",
+      "notices": {
+        "removed": "已解除安裝 {name}，釋放了 {size}",
+        "notInstalled": "{name} 已經解除安裝",
+        "stillRequired": "{name} 未被解除安裝，因為 {names} 仍然需要它",
+        "stillInstalled": "Homebrew 已結束，但 {name} 仍處於安裝狀態",
+        "failed": "Homebrew 無法解除安裝 {name}。複製指令並在終端機中執行即可查看原因"
+      }
     },
     "python": {
       "emptyTitle": "找不到虛擬環境",
@@ -4093,21 +4114,38 @@
       "files": "{count} 個檔案",
       "createdAt": "建立於 {date}",
       "reveal": "在檔案管理員中顯示",
-      "hint": "沒有專案或直接放在主資料夾中的環境，最可能是不再需要的，或是誤裝成了全域環境"
-    }
+      "hint": "沒有專案或直接放在主資料夾中的環境，最可能是不再需要的，或是誤裝成了全域環境",
+      "idleTitle": "尋找 Python 環境",
+      "idleDescription": "掃描主資料夾中的 Python 虛擬環境，包括被遺忘和已損壞的環境",
+      "delete": "刪除",
+      "deleteTitle": "刪除 {name}？",
+      "deleteDescription": "{path} 及其中的所有內容將被永久刪除。需要時可用套件管理工具重新建立",
+      "deleteSummary": "預計釋放",
+      "deleteNote": "只會刪除環境資料夾，不會動到你的專案檔案",
+      "toolManagedNote": "此環境由工具管理，需要時可能會被重新建立",
+      "notices": {
+        "removed": "已刪除 {name}，釋放了 {size}",
+        "notFound": "{name} 已不存在",
+        "notAnEnvironment": "{name} 不是虛擬環境，已保留",
+        "outsideScope": "{name} 位於 MangoDisk 管理的資料夾之外，已保留",
+        "unexpectedContents": "{name} 包含虛擬環境不會建立的檔案（如專案檔案），已保留",
+        "failed": "{name} 未能完全刪除。請關閉正在使用它的程式後重試"
+      }
+    },
+    "scan": "掃描",
+    "removing": "正在移除…"
   },
   "openFileHolders": {
     "title": "開啟的檔案",
-    "subtitle": "找出哪些應用程式正在佔用檔案、資料夾或磁碟區",
+    "subtitle": "檢視哪些應用程式讓檔案保持開啟，或找出佔用檔案、資料夾或磁碟區的程式",
     "pathLabel": "路徑",
-    "pathPlaceholder": "/Volumes/磁碟 或 /Users/你/資料夾",
+    "pathPlaceholder": "選填：要尋找的檔案、資料夾或磁碟區",
     "chooseFolder": "選擇資料夾",
     "find": "尋找",
     "searching": "正在尋找…",
     "emptyTitle": "沒有程序佔用此路徑",
     "emptyDescription": "你能檢查的程序中沒有開啟它的",
-    "visibilityNotice": "僅列出你帳號下的程序。其他使用者或系統的程序也可能佔用該路徑",
-    "helper": "輔助程序：{command}",
+    "visibilityNotice": "僅列出你帳號下的程序。其他使用者或系統的程序也可能開啟了檔案",
     "pid": "PID {pid}",
     "openFiles": "開啟的檔案：{count}",
     "close": "關閉",
@@ -4117,6 +4155,61 @@
     "forceConfirmTitle": "強制關閉 {name}？",
     "forceConfirmDescription": "程序會立即結束，未儲存的資料可能遺失",
     "closed": "程序已停止",
-    "stillRunning": "程序仍在執行，可以強制關閉"
+    "stillRunning": "程序仍在執行，可以強制關閉",
+    "searchAgain": "重新尋找",
+    "idleTitle": "檢視哪些應用程式讓檔案保持開啟",
+    "idleDescription": "尋找會列出所有開啟了檔案的應用程式，以及它們的程序和所佔用的檔案。輸入路徑則只尋找佔用該路徑的程式",
+    "emptyAllTitle": "沒有找到開啟的檔案",
+    "emptyAllDescription": "可檢查的程序中沒有開啟檔案的程序",
+    "summary": "{applications} 個應用程式 · {processes} 個程序 · {files} 個開啟的檔案",
+    "holdingPath": "佔用 {path}",
+    "processCount": "{count} 個程序",
+    "moreFiles": "另有 {count} 個",
+    "helperBadge": "輔助程序"
+  },
+  "memoryAnalysis": {
+    "title": "記憶體",
+    "subtitle": "檢視是什麼佔用了記憶體，以及該關閉哪些應用程式",
+    "refresh": "重新整理",
+    "analyzing": "正在分析記憶體…",
+    "idleTitle": "找出佔用記憶體的程式",
+    "idleDescription": "MangoDisk 會測量記憶體的去向，並依用量對應用程式排序，包括系統已壓縮或轉移到磁碟的記憶體",
+    "analyze": "分析記憶體",
+    "barLabel": "記憶體使用情況",
+    "categories": {
+      "application": "App 記憶體",
+      "wired": "核心記憶體",
+      "compressed": "已壓縮",
+      "cached": "快取的檔案",
+      "free": "閒置"
+    },
+    "categoryHints": {
+      "application": "正在執行的應用程式佔用的記憶體",
+      "wired": "無法壓縮或轉移到磁碟的系統記憶體",
+      "compressed": "為騰出空間而壓縮的非使用中記憶體；應用程式被喚醒時會消耗 CPU",
+      "cached": "為提速而保留的最近使用檔案；需要空間時會釋放",
+      "free": "未使用的記憶體"
+    },
+    "pressure": {
+      "label": "記憶體壓力",
+      "normal": "正常",
+      "warning": "偏高",
+      "critical": "嚴重"
+    },
+    "swap": "交換空間：已用 {used}，共 {total}",
+    "findings": {
+      "pressureCritical": "記憶體壓力已達嚴重等級。請關閉下方用量最大的應用程式，以免變慢",
+      "pressureWarning": "記憶體壓力偏高。關閉下方用量最大的應用程式之一會有幫助",
+      "swapInUse": "有 {size} 的記憶體內容被轉移到磁碟（交換）。系統需要讀回時，應用程式會變慢",
+      "heavyCompression": "有 {size} 的記憶體被壓縮。你的應用程式持有的資料超過了記憶體容量"
+    },
+    "consumersTitle": "依記憶體用量排序的應用程式",
+    "metricFootprint": "記憶體佔用量",
+    "metricResident": "駐留記憶體",
+    "footprintHint": "佔用量包含系統已壓縮或轉移到磁碟的記憶體，因此總和可能超過實體記憶體。請用它來比較應用程式",
+    "noConsumers": "沒有應用程式回報記憶體用量",
+    "moreProcesses": "另有 {count} 個較小的程序",
+    "approximateHint": "部分程序不允許讀取其佔用量，因此改用駐留大小 (≈)",
+    "pid": "PID {pid}"
   }
 }

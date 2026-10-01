@@ -3,6 +3,7 @@ pub mod cpu;
 pub mod disk;
 pub mod disk_io;
 mod memory;
+pub mod memory_analysis;
 pub mod metrics;
 pub mod models;
 pub mod network;
