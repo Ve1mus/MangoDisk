@@ -282,6 +282,8 @@ pub fn run() {
             commands::feedback::submit_feedback,
             commands::developer_environments::scan_homebrew_packages,
             commands::developer_environments::scan_python_environments,
+            commands::open_file_holders::find_open_file_holders,
+            commands::open_file_holders::close_open_file_holder,
             commands::history::list_history,
             commands::history::clear_history,
             commands::system_settings::open_privacy_settings,

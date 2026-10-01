@@ -110,7 +110,8 @@
     "startup": "시작 항목",
     "history": "작업 기록",
     "settings": "설정",
-    "developer-environments": "개발 환경"
+    "developer-environments": "개발 환경",
+    "open-file-holders": "열려 있는 파일"
   },
   "fullDiskAccessGuidance": {
     "summary": "전체 디스크 접근 권한을 켜서 더 완전한 결과 보기",
@@ -4094,5 +4095,28 @@
       "reveal": "파일 관리자에서 보기",
       "hint": "프로젝트가 없거나 홈 폴더 바로 아래에 있는 환경은 필요 없거나 실수로 전역 설치되었을 가능성이 가장 높습니다"
     }
+  },
+  "openFileHolders": {
+    "title": "열려 있는 파일",
+    "subtitle": "파일, 폴더 또는 볼륨을 열어 둔 앱을 찾습니다",
+    "pathLabel": "경로",
+    "pathPlaceholder": "/Volumes/디스크 또는 /Users/사용자/폴더",
+    "chooseFolder": "폴더 선택",
+    "find": "찾기",
+    "searching": "찾는 중…",
+    "emptyTitle": "이 경로를 사용하는 프로세스가 없습니다",
+    "emptyDescription": "확인할 수 있는 프로세스 중 이 경로를 연 것이 없습니다",
+    "visibilityNotice": "내 계정의 프로세스만 표시됩니다. 다른 사용자나 시스템의 프로세스도 이 경로를 사용 중일 수 있습니다",
+    "helper": "보조 프로세스: {command}",
+    "pid": "PID {pid}",
+    "openFiles": "열린 파일: {count}",
+    "close": "닫기",
+    "forceClose": "강제 종료",
+    "confirmTitle": "{name}을(를) 닫을까요?",
+    "confirmDescription": "MangoDisk는 먼저 앱에 종료를 요청하여 작업을 저장할 수 있게 합니다",
+    "forceConfirmTitle": "{name}을(를) 강제 종료할까요?",
+    "forceConfirmDescription": "프로세스가 즉시 종료되며 저장하지 않은 데이터가 손실될 수 있습니다",
+    "closed": "프로세스가 중지되었습니다",
+    "stillRunning": "프로세스가 아직 실행 중입니다. 강제 종료할 수 있습니다"
   }
 }

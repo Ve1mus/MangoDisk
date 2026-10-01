@@ -110,7 +110,8 @@
     "startup": "Startup Items",
     "history": "Operation History",
     "settings": "Settings",
-    "developer-environments": "Developer Environments"
+    "developer-environments": "Developer Environments",
+    "open-file-holders": "Open Files"
   },
   "fullDiskAccessGuidance": {
     "summary": "Enable Full Disk Access for more complete results",
@@ -4094,5 +4095,28 @@
       "reveal": "Show in file manager",
       "hint": "Environments without a project, or sitting directly in the home folder, are the most likely to be unneeded or installed globally by mistake"
     }
+  },
+  "openFileHolders": {
+    "title": "Open Files",
+    "subtitle": "Find which apps keep a file, folder, or volume open",
+    "pathLabel": "Path",
+    "pathPlaceholder": "/Volumes/Disk or /Users/you/Folder",
+    "chooseFolder": "Choose folder",
+    "find": "Find",
+    "searching": "Searching…",
+    "emptyTitle": "Nothing is holding this path",
+    "emptyDescription": "No process you can inspect has it open",
+    "visibilityNotice": "Only processes of your account are listed. Processes of other users and the system may also hold the path",
+    "helper": "Helper: {command}",
+    "pid": "PID {pid}",
+    "openFiles": "Open files: {count}",
+    "close": "Close",
+    "forceClose": "Force close",
+    "confirmTitle": "Close {name}?",
+    "confirmDescription": "MangoDisk asks the app to quit first, so it can save its work",
+    "forceConfirmTitle": "Force close {name}?",
+    "forceConfirmDescription": "The process ends immediately and unsaved data can be lost",
+    "closed": "The process has stopped",
+    "stillRunning": "The process is still running. You can force close it"
   }
 }

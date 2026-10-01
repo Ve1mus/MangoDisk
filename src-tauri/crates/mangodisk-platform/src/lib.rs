@@ -18,6 +18,7 @@ mod inventory;
 pub mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+pub mod open_file_holders;
 pub mod path_mutation;
 #[cfg(not(target_os = "linux"))]
 mod startup_helper;

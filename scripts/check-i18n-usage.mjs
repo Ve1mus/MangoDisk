@@ -43,6 +43,7 @@ const dynamicKeyGroups = {
     'application-uninstall',
     'startup',
     'developer-environments',
+    'open-file-holders',
     'privacy',
     'history',
     'settings',

@@ -59,8 +59,8 @@ pub use developer_environments::{
 };
 pub use filesystem::{
     metadata::diagnostic_path, DirectorySelectionOutcome, DirectorySelectionService, DiskInfo,
-    PermanentDeleteBatchResult, PermanentDeleteCandidate, PermanentDeleteFailure,
-    ResolvedDirectory, ScanExclusionOptions,
+    OpenFileHolder, OpenFileHolderService, OpenFileHoldersResult, PermanentDeleteBatchResult,
+    PermanentDeleteCandidate, PermanentDeleteFailure, ResolvedDirectory, ScanExclusionOptions,
 };
 pub use history::{
     ApplicationLeftoverOperationDetails, ApplicationUninstallOperationDetails,

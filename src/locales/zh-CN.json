@@ -110,7 +110,8 @@
     "startup": "启动项管理",
     "history": "操作历史",
     "settings": "设置",
-    "developer-environments": "开发环境"
+    "developer-environments": "开发环境",
+    "open-file-holders": "打开的文件"
   },
   "fullDiskAccessGuidance": {
     "summary": "开启完全磁盘访问，获取更完整结果",
@@ -4094,5 +4095,28 @@
       "reveal": "在文件管理器中显示",
       "hint": "没有项目或直接放在主文件夹中的环境，最可能是不再需要的，或是误装成了全局环境"
     }
+  },
+  "openFileHolders": {
+    "title": "打开的文件",
+    "subtitle": "查找哪些应用正在占用文件、文件夹或磁盘卷",
+    "pathLabel": "路径",
+    "pathPlaceholder": "/Volumes/磁盘 或 /Users/你/文件夹",
+    "chooseFolder": "选择文件夹",
+    "find": "查找",
+    "searching": "正在查找…",
+    "emptyTitle": "没有进程占用此路径",
+    "emptyDescription": "你能检查的进程中没有打开它的",
+    "visibilityNotice": "仅列出你账户下的进程。其他用户或系统的进程也可能占用该路径",
+    "helper": "辅助进程：{command}",
+    "pid": "PID {pid}",
+    "openFiles": "打开的文件：{count}",
+    "close": "关闭",
+    "forceClose": "强制关闭",
+    "confirmTitle": "关闭 {name}？",
+    "confirmDescription": "MangoDisk 会先请求应用退出，以便它保存工作",
+    "forceConfirmTitle": "强制关闭 {name}？",
+    "forceConfirmDescription": "进程会立即结束，未保存的数据可能丢失",
+    "closed": "进程已停止",
+    "stillRunning": "进程仍在运行，可以强制关闭"
   }
 }

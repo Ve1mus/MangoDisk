@@ -110,7 +110,8 @@
     "startup": "スタートアップ項目",
     "history": "操作履歴",
     "settings": "設定",
-    "developer-environments": "開発環境"
+    "developer-environments": "開発環境",
+    "open-file-holders": "開いているファイル"
   },
   "fullDiskAccessGuidance": {
     "summary": "フルディスクアクセスを有効にして結果を充実させる",
@@ -4094,5 +4095,28 @@
       "reveal": "ファイルマネージャで表示",
       "hint": "プロジェクトがない環境やホームフォルダ直下の環境は、不要であるか、誤ってグローバルにインストールされた可能性が高いです"
     }
+  },
+  "openFileHolders": {
+    "title": "開いているファイル",
+    "subtitle": "ファイル、フォルダ、ボリュームを開いたままにしているアプリを探します",
+    "pathLabel": "パス",
+    "pathPlaceholder": "/Volumes/ディスク または /Users/あなた/フォルダ",
+    "chooseFolder": "フォルダを選択",
+    "find": "検索",
+    "searching": "検索中…",
+    "emptyTitle": "このパスを使用しているプロセスはありません",
+    "emptyDescription": "確認できるプロセスの中に、これを開いているものはありません",
+    "visibilityNotice": "表示されるのはあなたのアカウントのプロセスのみです。他のユーザーやシステムのプロセスが使用している可能性もあります",
+    "helper": "補助プロセス：{command}",
+    "pid": "PID {pid}",
+    "openFiles": "開いているファイル：{count}",
+    "close": "閉じる",
+    "forceClose": "強制終了",
+    "confirmTitle": "{name} を閉じますか？",
+    "confirmDescription": "MangoDisk はまずアプリに終了を依頼し、作業を保存できるようにします",
+    "forceConfirmTitle": "{name} を強制終了しますか？",
+    "forceConfirmDescription": "プロセスは直ちに終了し、未保存のデータは失われる可能性があります",
+    "closed": "プロセスが停止しました",
+    "stillRunning": "プロセスはまだ実行中です。強制終了できます"
   }
 }
