@@ -8,13 +8,10 @@ use super::{
 
 /// Replaces the generic overview with Activity Monitor's categories when the
 /// kernel statistics are readable; otherwise the generic values stay.
-pub(super) fn refine(snapshot: &mut MemoryBreakdownSnapshot) {
+pub(super) fn refine(mut snapshot: MemoryBreakdownSnapshot) -> MemoryBreakdownSnapshot {
     snapshot.pressure = pressure_level();
-    let Some(page_size) = page_size() else {
-        return;
-    };
-    let Some(statistics) = vm_statistics() else {
-        return;
+    let (Some(page_size), Some(statistics)) = (page_size(), vm_statistics()) else {
+        return snapshot;
     };
     let pages = |count: u32| u64::from(count).saturating_mul(page_size);
     // Application memory is anonymous pages that are not purgeable; purgeable and
@@ -42,6 +39,7 @@ pub(super) fn refine(snapshot: &mut MemoryBreakdownSnapshot) {
     )
     .min(snapshot.total_bytes);
     snapshot.categories = Some(categories);
+    snapshot
 }
 
 fn page_size() -> Option<u64> {

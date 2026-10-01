@@ -18,7 +18,13 @@ mod native;
 /// Other platforms report resident (working set) size and expose no extra counters.
 #[cfg(not(target_os = "macos"))]
 mod native {
-    use super::{ProcessFootprint, ProcessFootprintSnapshot, ProcessMemoryMetric};
+    use super::{
+        MemoryBreakdownSnapshot, ProcessFootprint, ProcessFootprintSnapshot, ProcessMemoryMetric,
+    };
+
+    pub(super) fn refine(snapshot: MemoryBreakdownSnapshot) -> MemoryBreakdownSnapshot {
+        snapshot
+    }
 
     pub(super) fn footprints(processes: Vec<ProcessFootprint>) -> ProcessFootprintSnapshot {
         ProcessFootprintSnapshot {
@@ -92,7 +98,7 @@ pub fn sample_breakdown() -> PlatformResult<MemoryBreakdownSnapshot> {
         ));
     }
     let total_bytes = system.total_memory();
-    let mut snapshot = MemoryBreakdownSnapshot {
+    let snapshot = MemoryBreakdownSnapshot {
         total_bytes,
         used_bytes: system.used_memory().min(total_bytes),
         free_bytes: system.free_memory().min(total_bytes),
@@ -101,9 +107,7 @@ pub fn sample_breakdown() -> PlatformResult<MemoryBreakdownSnapshot> {
         categories: None,
         pressure: None,
     };
-    #[cfg(target_os = "macos")]
-    native::refine(&mut snapshot);
-    Ok(snapshot)
+    Ok(native::refine(snapshot))
 }
 
 pub fn sample_processes() -> PlatformResult<ProcessFootprintSnapshot> {
