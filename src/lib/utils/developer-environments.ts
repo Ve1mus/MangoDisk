@@ -30,7 +30,7 @@ export function pythonEnvironmentFlags(item: PythonEnvironment): PythonEnvironme
   return flags;
 }
 
-export function pythonEnvironmentName(item: PythonEnvironment): string {
+export function pythonEnvironmentName(item: Pick<PythonEnvironment, 'path'>): string {
   const segments = item.path.split(/[\\/]+/u).filter(Boolean);
   const name = segments.at(-1) ?? item.path;
   const owner = segments.at(-2);

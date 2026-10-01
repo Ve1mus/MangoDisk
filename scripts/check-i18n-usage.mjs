@@ -44,6 +44,7 @@ const dynamicKeyGroups = {
     'startup',
     'developer-environments',
     'open-file-holders',
+    'memory-analysis',
     'privacy',
     'history',
     'settings',

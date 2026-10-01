@@ -4,5 +4,6 @@ pub mod cpu;
 pub mod disk;
 pub mod disk_io;
 pub mod memory;
+pub mod memory_breakdown;
 pub mod network;
 pub mod release;

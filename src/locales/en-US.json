@@ -111,7 +111,8 @@
     "history": "Operation History",
     "settings": "Settings",
     "developer-environments": "Developer Environments",
-    "open-file-holders": "Open Files"
+    "open-file-holders": "Open Files",
+    "memory-analysis": "Memory"
   },
   "fullDiskAccessGuidance": {
     "summary": "Enable Full Disk Access for more complete results",
@@ -4073,10 +4074,30 @@
         "dependency": "Dependency",
         "unusedDependency": "Unused dependency"
       },
-      "requiredBy": "Required by {names}",
+      "requiredBy": "Required by ({count})",
       "versions": "Versions: {versions}",
       "installedAt": "Installed {date}",
-      "hint": "Removal is done with Homebrew. Copy the command and run it in Terminal; brew refuses to remove a package other packages still need"
+      "hint": "Uninstall runs Homebrew, which refuses to remove a package other packages still need. You can also copy the command and run it in Terminal",
+      "idleTitle": "Review Homebrew packages",
+      "idleDescription": "Scan to list installed packages, what depends on what, and which ones you can remove",
+      "dependsOn": "Depends on ({count})",
+      "dependsOnCount": "Depends on {count}",
+      "requiredByCount": "Required by {count}",
+      "noRelations": "None",
+      "blocked": "Uninstall {names} first. They still need this package",
+      "uninstall": "Uninstall",
+      "uninstallTitle": "Uninstall {name}?",
+      "uninstallDescription": "Homebrew removes the package from this computer. This cannot be undone",
+      "uninstallSummary": "Frees up about",
+      "formulaNote": "Packages that only this one needed stay installed and will be listed as unused dependencies",
+      "caskNote": "Some casks need an administrator password. If Homebrew cannot finish, run the copied command in Terminal",
+      "notices": {
+        "removed": "{name} was uninstalled and {size} was freed",
+        "notInstalled": "{name} is already uninstalled",
+        "stillRequired": "{name} was not uninstalled because {names} still need it",
+        "stillInstalled": "Homebrew finished but {name} is still installed",
+        "failed": "Homebrew could not uninstall {name}. Copy the command and run it in Terminal to see why"
+      }
     },
     "python": {
       "emptyTitle": "No virtual environments found",
@@ -4093,21 +4114,38 @@
       "files": "{count} files",
       "createdAt": "Created {date}",
       "reveal": "Show in file manager",
-      "hint": "Environments without a project, or sitting directly in the home folder, are the most likely to be unneeded or installed globally by mistake"
-    }
+      "hint": "Environments without a project, or sitting directly in the home folder, are the most likely to be unneeded or installed globally by mistake",
+      "idleTitle": "Find Python environments",
+      "idleDescription": "Scan your home folder for Python virtual environments, including forgotten and broken ones",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteDescription": "{path} and everything inside it will be deleted permanently. Recreate it with your package manager if you need it again",
+      "deleteSummary": "Frees up about",
+      "deleteNote": "Only the environment folder is deleted; your project files are not touched",
+      "toolManagedNote": "A tool manages this environment and may recreate it when needed",
+      "notices": {
+        "removed": "{name} was deleted and {size} was freed",
+        "notFound": "{name} no longer exists",
+        "notAnEnvironment": "{name} is not a virtual environment, so it was left in place",
+        "outsideScope": "{name} is outside the folders MangoDisk manages, so it was left in place",
+        "unexpectedContents": "{name} contains files a virtual environment does not create, such as project files, so it was left in place",
+        "failed": "{name} could not be fully deleted. Close programs that use it and try again"
+      }
+    },
+    "scan": "Scan",
+    "removing": "Removing…"
   },
   "openFileHolders": {
     "title": "Open Files",
-    "subtitle": "Find which apps keep a file, folder, or volume open",
+    "subtitle": "See which apps keep files open, or find what holds a file, folder, or volume",
     "pathLabel": "Path",
-    "pathPlaceholder": "/Volumes/Disk or /Users/you/Folder",
+    "pathPlaceholder": "Optional: a file, folder, or volume to look for",
     "chooseFolder": "Choose folder",
-    "find": "Find",
+    "find": "Search",
     "searching": "Searching…",
     "emptyTitle": "Nothing is holding this path",
     "emptyDescription": "No process you can inspect has it open",
-    "visibilityNotice": "Only processes of your account are listed. Processes of other users and the system may also hold the path",
-    "helper": "Helper: {command}",
+    "visibilityNotice": "Only processes of your account are listed. Processes of other users and the system may also hold files",
     "pid": "PID {pid}",
     "openFiles": "Open files: {count}",
     "close": "Close",
@@ -4117,6 +4155,61 @@
     "forceConfirmTitle": "Force close {name}?",
     "forceConfirmDescription": "The process ends immediately and unsaved data can be lost",
     "closed": "The process has stopped",
-    "stillRunning": "The process is still running. You can force close it"
+    "stillRunning": "The process is still running. You can force close it",
+    "searchAgain": "Search again",
+    "idleTitle": "See which apps keep files open",
+    "idleDescription": "Search lists every app with open files, with its processes and the files they hold. Enter a path to find only what holds it",
+    "emptyAllTitle": "No open files found",
+    "emptyAllDescription": "No process you can inspect has files open",
+    "summary": "{applications} apps · {processes} processes · {files} open files",
+    "holdingPath": "Holding {path}",
+    "processCount": "{count} processes",
+    "moreFiles": "and {count} more",
+    "helperBadge": "Helper"
+  },
+  "memoryAnalysis": {
+    "title": "Memory",
+    "subtitle": "See what is using your RAM and which apps to close",
+    "refresh": "Refresh",
+    "analyzing": "Analyzing memory…",
+    "idleTitle": "Find what is using your memory",
+    "idleDescription": "MangoDisk measures where memory goes and ranks apps by how much they use, including memory the system has compressed or moved to disk",
+    "analyze": "Analyze memory",
+    "barLabel": "How memory is used",
+    "categories": {
+      "application": "App memory",
+      "wired": "Wired",
+      "compressed": "Compressed",
+      "cached": "Cached files",
+      "free": "Free"
+    },
+    "categoryHints": {
+      "application": "Memory held by running apps",
+      "wired": "System memory that cannot be compressed or moved to disk",
+      "compressed": "Inactive memory squeezed to make room; costs CPU when apps wake up",
+      "cached": "Recently used files kept for speed; released when apps need room",
+      "free": "Unused memory"
+    },
+    "pressure": {
+      "label": "Memory pressure",
+      "normal": "Normal",
+      "warning": "Elevated",
+      "critical": "Critical"
+    },
+    "swap": "Swap: {used} of {total}",
+    "findings": {
+      "pressureCritical": "Memory pressure is critical. Close the biggest apps below to avoid slowdowns",
+      "pressureWarning": "Memory pressure is elevated. Closing one of the biggest apps below will help",
+      "swapInUse": "{size} of memory content was moved to disk (swap). Apps feel slow when the system has to read it back",
+      "heavyCompression": "{size} of memory is compressed. Your apps hold more data than fits in RAM"
+    },
+    "consumersTitle": "Apps by memory use",
+    "metricFootprint": "Memory footprint",
+    "metricResident": "Resident memory",
+    "footprintHint": "Footprint includes memory the system compressed or moved to disk, so the numbers can add up to more than your RAM. Use them to rank apps",
+    "noConsumers": "No applications reported memory use",
+    "moreProcesses": "and {count} smaller processes",
+    "approximateHint": "Some processes do not allow reading their footprint, so their resident size is used (≈)",
+    "pid": "PID {pid}"
   }
 }

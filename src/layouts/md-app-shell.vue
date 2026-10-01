@@ -43,6 +43,7 @@ import { useDeveloperEnvironmentsStore } from '@/stores/developer-environments-s
 import { useDuplicateFilesStore } from '@/stores/duplicate-files-store';
 import { useHistoryStore } from '@/stores/history-store';
 import { useLargeFilesStore } from '@/stores/large-files-store';
+import { useMemoryAnalysisStore } from '@/stores/memory-analysis-store';
 import { useOpenFileHoldersStore } from '@/stores/open-file-holders-store';
 import { usePrivacyStore } from '@/stores/privacy-store';
 import { useStorageScopeStore } from '@/stores/storage-scope-store';
@@ -68,6 +69,7 @@ const loadDeveloperEnvironmentsPage = () => import('@/pages/developer-environmen
 const loadDuplicateFilesPage = () => import('@/pages/duplicate-files/index.vue');
 const loadHistoryPage = () => import('@/pages/history/index.vue');
 const loadLargeFilesPage = () => import('@/pages/large-files/index.vue');
+const loadMemoryAnalysisPage = () => import('@/pages/memory-analysis/index.vue');
 const loadOpenFileHoldersPage = () => import('@/pages/open-file-holders/index.vue');
 const loadPrivacyPage = () => import('@/pages/privacy/index.vue');
 const loadSettingsPage = () => import('@/pages/settings/index.vue');
@@ -81,6 +83,7 @@ const pageLoaders: Partial<Record<PageId, () => Promise<unknown>>> = {
   [PAGE_IDS.duplicateFiles]: loadDuplicateFilesPage,
   [PAGE_IDS.history]: loadHistoryPage,
   [PAGE_IDS.largeFiles]: loadLargeFilesPage,
+  [PAGE_IDS.memoryAnalysis]: loadMemoryAnalysisPage,
   [PAGE_IDS.openFileHolders]: loadOpenFileHoldersPage,
   [PAGE_IDS.privacy]: loadPrivacyPage,
   [PAGE_IDS.settings]: loadSettingsPage,
@@ -94,6 +97,7 @@ const DeveloperEnvironmentsPage = defineAsyncComponent(loadDeveloperEnvironments
 const DuplicateFilesPage = defineAsyncComponent(loadDuplicateFilesPage);
 const HistoryPage = defineAsyncComponent(loadHistoryPage);
 const LargeFilesPage = defineAsyncComponent(loadLargeFilesPage);
+const MemoryAnalysisPage = defineAsyncComponent(loadMemoryAnalysisPage);
 const OpenFileHoldersPage = defineAsyncComponent(loadOpenFileHoldersPage);
 const PrivacyPage = defineAsyncComponent(loadPrivacyPage);
 const SettingsPage = defineAsyncComponent(loadSettingsPage);
@@ -138,6 +142,7 @@ const largeFilesStore = useLargeFilesStore();
 const privacyStore = usePrivacyStore();
 const duplicateFilesStore = useDuplicateFilesStore();
 const developerEnvironmentsStore = useDeveloperEnvironmentsStore();
+const memoryAnalysisStore = useMemoryAnalysisStore();
 const openFileHoldersStore = useOpenFileHoldersStore();
 const storageScopeStore = useStorageScopeStore();
 const startupStore = useStartupStore();
@@ -235,7 +240,8 @@ const busyPages = computed<PageId[]>(() => [
     ? [PAGE_IDS.systemOptimization]
     : []),
   ...(systemMaintenanceStore.scanning || systemMaintenanceStore.executing ? [PAGE_IDS.systemMaintenance] : []),
-  ...(developerEnvironmentsStore.scanning ? [PAGE_IDS.developerEnvironments] : []),
+  ...(developerEnvironmentsStore.busy ? [PAGE_IDS.developerEnvironments] : []),
+  ...(memoryAnalysisStore.analyzing ? [PAGE_IDS.memoryAnalysis] : []),
   ...(openFileHoldersStore.busy ? [PAGE_IDS.openFileHolders] : []),
   ...(historyStore.loading ? [PAGE_IDS.history] : []),
 ]);
@@ -790,6 +796,7 @@ async function cancelDeepCleanup() {
         />
         <DeveloperEnvironmentsPage v-else-if="store.currentPage === PAGE_IDS.developerEnvironments" />
         <OpenFileHoldersPage v-else-if="store.currentPage === PAGE_IDS.openFileHolders" />
+        <MemoryAnalysisPage v-else-if="store.currentPage === PAGE_IDS.memoryAnalysis" />
         <HistoryPage
           v-else-if="store.currentPage === PAGE_IDS.history"
           :history="localizedHistory"

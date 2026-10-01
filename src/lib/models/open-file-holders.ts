@@ -9,7 +9,8 @@ export interface OpenFileHolder {
 
 export interface OpenFileHoldersResult {
   schemaVersion: number;
-  path: string;
+  /** The path that was searched; null lists every open file of the account. */
+  path: string | null;
   holders: OpenFileHolder[];
   elapsedMs: number;
 }

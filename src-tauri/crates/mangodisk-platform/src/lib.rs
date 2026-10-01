@@ -13,6 +13,7 @@ pub mod diagnostics;
 #[cfg(windows)]
 mod disk_cleanup_helper;
 mod file_icon;
+pub mod homebrew;
 mod inventory;
 #[cfg(target_os = "linux")]
 pub mod linux;

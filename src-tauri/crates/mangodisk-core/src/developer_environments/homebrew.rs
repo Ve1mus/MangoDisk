@@ -10,13 +10,13 @@ use std::{
     time::UNIX_EPOCH,
 };
 
-use serde::Serialize;
+use mangodisk_platform::homebrew::{self as platform_homebrew, HomebrewUninstallRun, PREFIXES};
+use serde::{Deserialize, Serialize};
 
 use super::tree_size;
+use crate::{CoreError, CoreResult};
 
-const PREFIXES: [&str; 3] = ["/opt/homebrew", "/usr/local", "/home/linuxbrew/.linuxbrew"];
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum HomebrewPackageKind {
     Formula,
@@ -35,6 +35,8 @@ pub struct HomebrewPackage {
     pub installed_on_request: bool,
     /// Installed formulae that declare this package as a runtime dependency.
     pub required_by: Vec<String>,
+    /// Runtime dependencies this package declares in its install receipt.
+    pub dependencies: Vec<String>,
     pub path: String,
 }
 
@@ -49,11 +51,7 @@ pub struct HomebrewInventory {
 }
 
 pub(super) fn scan() -> HomebrewInventory {
-    let Some(prefix) = PREFIXES
-        .iter()
-        .map(Path::new)
-        .find(|prefix| prefix.join("Cellar").is_dir() || prefix.join("Caskroom").is_dir())
-    else {
+    let Some(prefix) = installed_prefix() else {
         return HomebrewInventory {
             schema_version: super::DEVELOPER_ENVIRONMENTS_SCHEMA_VERSION,
             supported: false,
@@ -114,19 +112,10 @@ fn package_from_directory(
     path: PathBuf,
     kind: HomebrewPackageKind,
 ) -> Option<HomebrewPackage> {
-    let mut versions = fs::read_dir(&path)
-        .ok()?
-        .filter_map(Result::ok)
-        .filter(|entry| {
-            !entry.file_name().to_string_lossy().starts_with('.')
-                && is_real_directory(&entry.path())
-        })
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .collect::<Vec<_>>();
+    let versions = installed_versions(&path);
     if versions.is_empty() {
         return None;
     }
-    versions.sort();
     let bytes = versions.iter().fold(0_u64, |total, version| {
         total.saturating_add(tree_size::measure(&path.join(version)).bytes)
     });
@@ -152,6 +141,9 @@ fn package_from_directory(
             .map(|receipt| receipt.installed_on_request)
             .unwrap_or(true),
         required_by: Vec::new(),
+        dependencies: receipt
+            .map(|receipt| receipt.runtime_dependencies)
+            .unwrap_or_default(),
         path: path.to_string_lossy().into_owned(),
     })
 }
@@ -187,20 +179,30 @@ fn parse_receipt(bytes: &[u8]) -> Option<Receipt> {
 }
 
 fn attach_reverse_dependencies(packages: &mut [HomebrewPackage], cellar: &Path) {
+    let required_by = reverse_dependencies(cellar);
+    for package in packages {
+        if let Some(dependents) = required_by.get(&package.name) {
+            package.required_by = dependents.iter().cloned().collect();
+        }
+    }
+}
+
+/// Maps every package to the installed formulae that declare it as a runtime dependency.
+/// Reads install receipts only, so it stays cheap compared with measuring package sizes.
+fn reverse_dependencies(cellar: &Path) -> BTreeMap<String, BTreeSet<String>> {
     let mut required_by: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for package in packages
-        .iter()
-        .filter(|package| package.kind == HomebrewPackageKind::Formula)
-    {
-        let Some(version) = package.versions.last() else {
+    let Ok(entries) = fs::read_dir(cellar) else {
+        return required_by;
+    };
+    for entry in entries.filter_map(Result::ok) {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with('.') || !is_real_directory(&entry.path()) {
+            continue;
+        }
+        let Some(version) = installed_versions(&entry.path()).pop() else {
             continue;
         };
-        let receipt = read_receipt(
-            &cellar
-                .join(&package.name)
-                .join(version)
-                .join("INSTALL_RECEIPT.json"),
-        );
+        let receipt = read_receipt(&entry.path().join(version).join("INSTALL_RECEIPT.json"));
         for dependency in receipt
             .map(|receipt| receipt.runtime_dependencies)
             .unwrap_or_default()
@@ -208,14 +210,159 @@ fn attach_reverse_dependencies(packages: &mut [HomebrewPackage], cellar: &Path) 
             required_by
                 .entry(dependency)
                 .or_default()
-                .insert(package.name.clone());
+                .insert(name.clone());
         }
     }
-    for package in packages {
-        if let Some(dependents) = required_by.get(&package.name) {
-            package.required_by = dependents.iter().cloned().collect();
-        }
+    required_by
+}
+
+/// Version directories of one package, oldest first; hidden entries and links are bookkeeping.
+fn installed_versions(package: &Path) -> Vec<String> {
+    let Ok(entries) = fs::read_dir(package) else {
+        return Vec::new();
+    };
+    let mut versions = entries
+        .filter_map(Result::ok)
+        .filter(|entry| {
+            !entry.file_name().to_string_lossy().starts_with('.')
+                && is_real_directory(&entry.path())
+        })
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    versions.sort();
+    versions
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HomebrewUninstallOutcome {
+    Removed,
+    /// The package is already gone, so there is nothing to remove.
+    NotInstalled,
+    /// Other installed formulae still need the package; it is left in place.
+    StillRequired,
+    /// `brew` reported success but the package is still installed.
+    StillInstalled,
+    /// `brew` failed, timed out, or could not be started.
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomebrewUninstallResult {
+    pub schema_version: u32,
+    pub name: String,
+    pub kind: HomebrewPackageKind,
+    pub outcome: HomebrewUninstallOutcome,
+    pub released_bytes: u64,
+    /// Installed formulae that block the removal; empty unless the outcome is `StillRequired`.
+    pub required_by: Vec<String>,
+    pub exit_code: Option<i32>,
+}
+
+/// Removes one package through `brew`, which owns the links and metadata a directory delete
+/// would leave behind. The package must be installed and not needed by another formula.
+pub(super) fn uninstall(
+    name: String,
+    kind: HomebrewPackageKind,
+) -> CoreResult<HomebrewUninstallResult> {
+    let Some(prefix) = installed_prefix() else {
+        return Err(CoreError::operation_failed("Homebrew is not installed"));
+    };
+    uninstall_with(&prefix, name, kind, platform_homebrew::uninstall)
+}
+
+/// The `run` seam lets tests exercise every outcome without executing a real `brew`.
+fn uninstall_with(
+    prefix: &Path,
+    name: String,
+    kind: HomebrewPackageKind,
+    run: impl FnOnce(&Path, &str, bool) -> mangodisk_platform::PlatformResult<HomebrewUninstallRun>,
+) -> CoreResult<HomebrewUninstallResult> {
+    if !platform_homebrew::is_safe_package_name(&name) {
+        return Err(CoreError::invalid_input("invalid Homebrew package name"));
     }
+    let root = prefix.join(match kind {
+        HomebrewPackageKind::Formula => "Cellar",
+        HomebrewPackageKind::Cask => "Caskroom",
+    });
+    let result = |outcome, released_bytes, required_by, exit_code| HomebrewUninstallResult {
+        schema_version: super::DEVELOPER_ENVIRONMENTS_SCHEMA_VERSION,
+        name: name.clone(),
+        kind,
+        outcome,
+        released_bytes,
+        required_by,
+        exit_code,
+    };
+    // A linked package directory is never owned content, as in the inventory scan.
+    let package_dir = root.join(&name);
+    let Some(package) = is_real_directory(&package_dir)
+        .then(|| package_from_directory(name.clone(), package_dir, kind))
+        .flatten()
+    else {
+        return Ok(result(
+            HomebrewUninstallOutcome::NotInstalled,
+            0,
+            Vec::new(),
+            None,
+        ));
+    };
+    // Checked here as well as by `brew`, so the answer does not depend on its wording.
+    let blockers = (kind == HomebrewPackageKind::Formula)
+        .then(|| reverse_dependencies(&prefix.join("Cellar")))
+        .and_then(|mut required_by| required_by.remove(&name))
+        .map(|dependents| dependents.into_iter().collect::<Vec<_>>())
+        .unwrap_or_default();
+    if !blockers.is_empty() {
+        log::warn!(
+            "homebrew_uninstall_blocked name={} dependent_count={}",
+            mangodisk_platform::diagnostics::text(&name),
+            blockers.len()
+        );
+        return Ok(result(
+            HomebrewUninstallOutcome::StillRequired,
+            0,
+            blockers,
+            None,
+        ));
+    }
+    let started = std::time::Instant::now();
+    let run = run(prefix, &name, kind == HomebrewPackageKind::Cask);
+    // Verify on disk rather than trusting the exit code: a timeout can still have removed it.
+    let still_installed = package_from_directory(name.clone(), root.join(&name), kind).is_some();
+    let (outcome, exit_code) = match (&run, still_installed) {
+        (_, false) => (HomebrewUninstallOutcome::Removed, None),
+        (Ok(HomebrewUninstallRun::Succeeded), true) => {
+            (HomebrewUninstallOutcome::StillInstalled, Some(0))
+        }
+        (Ok(HomebrewUninstallRun::Failed { exit_code }), true) => {
+            (HomebrewUninstallOutcome::Failed, *exit_code)
+        }
+        (Err(_), true) => (HomebrewUninstallOutcome::Failed, None),
+    };
+    log::info!(
+        "homebrew_uninstall_finished name={} kind={kind:?} outcome={outcome:?} exit_code={exit_code:?} error={} elapsed_ms={}",
+        mangodisk_platform::diagnostics::text(&name),
+        run.as_ref()
+            .err()
+            .map(mangodisk_platform::diagnostics::text)
+            .unwrap_or_default(),
+        started.elapsed().as_millis()
+    );
+    let released_bytes = if outcome == HomebrewUninstallOutcome::Removed {
+        package.bytes
+    } else {
+        0
+    };
+    Ok(result(outcome, released_bytes, Vec::new(), exit_code))
+}
+
+fn installed_prefix() -> Option<PathBuf> {
+    PREFIXES
+        .iter()
+        .map(PathBuf::from)
+        .find(|prefix| prefix.join("Cellar").is_dir() || prefix.join("Caskroom").is_dir())
 }
 
 fn is_real_directory(path: &Path) -> bool {
@@ -284,6 +431,122 @@ mod tests {
         assert!(app.required_by.is_empty());
         assert_eq!(lib.versions, ["2.1"]);
         assert!(lib.bytes >= 100);
+    }
+
+    #[test]
+    fn packages_list_their_own_runtime_dependencies() {
+        let root = tempfile::tempdir().unwrap();
+        formula(
+            root.path(),
+            "app",
+            "1.0",
+            r#"{"installed_on_request": true, "runtime_dependencies": [{"full_name": "lib"}, {"full_name": "ssl"}]}"#,
+        );
+
+        let packages = read_packages(&root.path().join("Cellar"), HomebrewPackageKind::Formula);
+
+        assert_eq!(packages[0].dependencies, ["lib", "ssl"]);
+    }
+
+    fn two_packages(root: &Path) {
+        formula(
+            root,
+            "app",
+            "1.0",
+            r#"{"installed_on_request": true, "runtime_dependencies": [{"full_name": "lib"}]}"#,
+        );
+        formula(root, "lib", "2.1", r#"{"installed_on_request": false}"#);
+    }
+
+    fn remove_package(
+        root: &Path,
+        name: &'static str,
+    ) -> impl FnOnce(&Path, &str, bool) -> mangodisk_platform::PlatformResult<HomebrewUninstallRun>
+    {
+        let target = root.join("Cellar").join(name);
+        move |_, _, _| {
+            fs::remove_dir_all(target).unwrap();
+            Ok(HomebrewUninstallRun::Succeeded)
+        }
+    }
+
+    #[test]
+    fn a_package_other_formulae_need_is_never_handed_to_brew() {
+        let root = tempfile::tempdir().unwrap();
+        two_packages(root.path());
+
+        let result = uninstall_with(
+            root.path(),
+            "lib".to_string(),
+            HomebrewPackageKind::Formula,
+            |_, _, _| panic!("a required package must not reach brew"),
+        )
+        .unwrap();
+
+        assert_eq!(result.outcome, HomebrewUninstallOutcome::StillRequired);
+        assert_eq!(result.required_by, ["app"]);
+        assert!(root.path().join("Cellar/lib").exists());
+    }
+
+    #[test]
+    fn a_removed_package_is_verified_on_disk_and_its_size_reported() {
+        let root = tempfile::tempdir().unwrap();
+        two_packages(root.path());
+
+        let result = uninstall_with(
+            root.path(),
+            "app".to_string(),
+            HomebrewPackageKind::Formula,
+            remove_package(root.path(), "app"),
+        )
+        .unwrap();
+
+        assert_eq!(result.outcome, HomebrewUninstallOutcome::Removed);
+        assert!(result.released_bytes >= 100);
+    }
+
+    #[test]
+    fn failures_and_false_success_are_reported_from_the_disk_state() {
+        let root = tempfile::tempdir().unwrap();
+        two_packages(root.path());
+        let outcome = |run: HomebrewUninstallRun| {
+            uninstall_with(
+                root.path(),
+                "app".to_string(),
+                HomebrewPackageKind::Formula,
+                move |_, _, _| Ok(run),
+            )
+            .unwrap()
+        };
+
+        let failed = outcome(HomebrewUninstallRun::Failed { exit_code: Some(1) });
+        assert_eq!(failed.outcome, HomebrewUninstallOutcome::Failed);
+        assert_eq!(failed.exit_code, Some(1));
+        let phantom = outcome(HomebrewUninstallRun::Succeeded);
+        assert_eq!(phantom.outcome, HomebrewUninstallOutcome::StillInstalled);
+        let missing = uninstall_with(
+            root.path(),
+            "ghost".to_string(),
+            HomebrewPackageKind::Formula,
+            |_, _, _| panic!("nothing to run"),
+        )
+        .unwrap();
+        assert_eq!(missing.outcome, HomebrewUninstallOutcome::NotInstalled);
+    }
+
+    #[test]
+    fn unsafe_names_are_rejected_before_anything_runs() {
+        let root = tempfile::tempdir().unwrap();
+
+        for name in ["--force", "tap/x", "../Cellar"] {
+            let error = uninstall_with(
+                root.path(),
+                name.to_string(),
+                HomebrewPackageKind::Formula,
+                |_, _, _| panic!("must not run"),
+            );
+            assert!(error.is_err(), "{name}");
+        }
     }
 
     #[test]
