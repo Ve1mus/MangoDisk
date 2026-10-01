@@ -39,6 +39,7 @@ import { useApplicationStore } from '@/stores/application-store';
 import { useAppUpdateStore } from '@/stores/app-update-store';
 import { useAppStore } from '@/stores/app-store';
 import { useCleanupStore } from '@/stores/cleanup-store';
+import { useDeveloperEnvironmentsStore } from '@/stores/developer-environments-store';
 import { useDuplicateFilesStore } from '@/stores/duplicate-files-store';
 import { useHistoryStore } from '@/stores/history-store';
 import { useLargeFilesStore } from '@/stores/large-files-store';
@@ -62,6 +63,7 @@ import MdWindowTitlebar from './components/md-window-titlebar.vue';
 // replacing the current page with an empty async-component placeholder.
 const loadAnalysisPage = () => import('@/pages/analysis/index.vue');
 const loadApplicationUninstallPage = () => import('@/pages/application-uninstall/index.vue');
+const loadDeveloperEnvironmentsPage = () => import('@/pages/developer-environments/index.vue');
 const loadDuplicateFilesPage = () => import('@/pages/duplicate-files/index.vue');
 const loadHistoryPage = () => import('@/pages/history/index.vue');
 const loadLargeFilesPage = () => import('@/pages/large-files/index.vue');
@@ -73,6 +75,7 @@ const loadSystemMaintenancePage = () => import('@/pages/system-maintenance/index
 const pageLoaders: Partial<Record<PageId, () => Promise<unknown>>> = {
   [PAGE_IDS.analysis]: loadAnalysisPage,
   [PAGE_IDS.applicationUninstall]: loadApplicationUninstallPage,
+  [PAGE_IDS.developerEnvironments]: loadDeveloperEnvironmentsPage,
   [PAGE_IDS.duplicateFiles]: loadDuplicateFilesPage,
   [PAGE_IDS.history]: loadHistoryPage,
   [PAGE_IDS.largeFiles]: loadLargeFilesPage,
@@ -84,6 +87,7 @@ const pageLoaders: Partial<Record<PageId, () => Promise<unknown>>> = {
 };
 const AnalysisPage = defineAsyncComponent(loadAnalysisPage);
 const ApplicationUninstallPage = defineAsyncComponent(loadApplicationUninstallPage);
+const DeveloperEnvironmentsPage = defineAsyncComponent(loadDeveloperEnvironmentsPage);
 const DuplicateFilesPage = defineAsyncComponent(loadDuplicateFilesPage);
 const HistoryPage = defineAsyncComponent(loadHistoryPage);
 const LargeFilesPage = defineAsyncComponent(loadLargeFilesPage);
@@ -129,6 +133,7 @@ const historyStore = useHistoryStore();
 const largeFilesStore = useLargeFilesStore();
 const privacyStore = usePrivacyStore();
 const duplicateFilesStore = useDuplicateFilesStore();
+const developerEnvironmentsStore = useDeveloperEnvironmentsStore();
 const storageScopeStore = useStorageScopeStore();
 const startupStore = useStartupStore();
 const systemSettingsStore = useSystemSettingsStore();
@@ -225,6 +230,7 @@ const busyPages = computed<PageId[]>(() => [
     ? [PAGE_IDS.systemOptimization]
     : []),
   ...(systemMaintenanceStore.scanning || systemMaintenanceStore.executing ? [PAGE_IDS.systemMaintenance] : []),
+  ...(developerEnvironmentsStore.scanning ? [PAGE_IDS.developerEnvironments] : []),
   ...(historyStore.loading ? [PAGE_IDS.history] : []),
 ]);
 const noticePages = computed<PageId[]>(() => (appUpdateStore.updateNoticeUnread ? [PAGE_IDS.settings] : []));
@@ -776,6 +782,7 @@ async function cancelDeepCleanup() {
           @open="openPath"
           @error="store.reportError"
         />
+        <DeveloperEnvironmentsPage v-else-if="store.currentPage === PAGE_IDS.developerEnvironments" />
         <HistoryPage
           v-else-if="store.currentPage === PAGE_IDS.history"
           :history="localizedHistory"

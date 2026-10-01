@@ -109,7 +109,8 @@
     "privacy": "隐私清理",
     "startup": "启动项管理",
     "history": "操作历史",
-    "settings": "设置"
+    "settings": "设置",
+    "developer-environments": "开发环境"
   },
   "fullDiskAccessGuidance": {
     "summary": "开启完全磁盘访问，获取更完整结果",
@@ -4046,5 +4047,52 @@
     "autoRuleExclusions": "排除应用：{count} 个",
     "revealAction": "打开位置",
     "quitAction": "退出"
+  },
+  "developerEnvironments": {
+    "title": "开发环境",
+    "subtitle": "查看这台电脑上安装的 Homebrew 软件包和 Python 虚拟环境",
+    "rescan": "重新扫描",
+    "scanning": "正在扫描…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Python 环境"
+    },
+    "summary": "{count} 项 · {size}",
+    "homebrew": {
+      "unsupportedTitle": "未安装 Homebrew",
+      "unsupportedDescription": "在这台电脑上没有找到 Homebrew 的 Cellar 或 Caskroom",
+      "emptyTitle": "没有软件包",
+      "emptyDescription": "Homebrew 中没有已安装的软件包",
+      "kinds": {
+        "formula": "Formula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "由你安装",
+        "dependency": "依赖项",
+        "unusedDependency": "未使用的依赖项"
+      },
+      "requiredBy": "被以下软件包需要：{names}",
+      "versions": "版本：{versions}",
+      "installedAt": "安装于 {date}",
+      "hint": "请使用 Homebrew 卸载。复制命令后在终端中运行；如果其他软件包仍需要它，brew 会拒绝卸载"
+    },
+    "python": {
+      "emptyTitle": "未找到虚拟环境",
+      "emptyDescription": "在主文件夹中没有找到 pyvenv.cfg",
+      "incomplete": "搜索因达到大小或时间上限而提前停止，部分环境可能未列出",
+      "flags": {
+        "interpreterMissing": "缺少 Python",
+        "homeRoot": "位于主文件夹",
+        "noProject": "附近没有项目",
+        "toolManaged": "由工具管理",
+        "systemSitePackages": "使用系统软件包"
+      },
+      "version": "Python {version}",
+      "files": "{count} 个文件",
+      "createdAt": "创建于 {date}",
+      "reveal": "在文件管理器中显示",
+      "hint": "没有项目或直接放在主文件夹中的环境，最可能是不再需要的，或是误装成了全局环境"
+    }
   }
 }

@@ -42,6 +42,7 @@ const dynamicKeyGroups = {
     'duplicate-files',
     'application-uninstall',
     'startup',
+    'developer-environments',
     'privacy',
     'history',
     'settings',

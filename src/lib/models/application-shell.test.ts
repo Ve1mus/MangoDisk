@@ -62,6 +62,7 @@ describe('application shell layout', () => {
     expect(PRIMARY_NAV_GROUPS[2].items.map(item => item.id)).toEqual([
       PAGE_IDS.applicationUninstall,
       PAGE_IDS.startup,
+      PAGE_IDS.developerEnvironments,
       PAGE_IDS.systemOptimization,
       PAGE_IDS.systemMaintenance,
     ]);
@@ -79,7 +80,10 @@ describe('application shell layout', () => {
     expect(isPageAvailableOnPlatform(PAGE_IDS.systemOptimization, 'linux')).toBe(false);
     expect(isPageAvailableOnPlatform(PAGE_IDS.systemMaintenance, 'linux')).toBe(true);
 
-    expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([PAGE_IDS.systemMaintenance]);
+    expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([
+      PAGE_IDS.developerEnvironments,
+      PAGE_IDS.systemMaintenance,
+    ]);
   });
 
   it('keeps the complete navigation on supported desktop platforms', () => {

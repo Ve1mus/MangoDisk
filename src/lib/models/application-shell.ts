@@ -65,6 +65,7 @@ export const PAGE_IDS = {
   applicationUninstall: 'application-uninstall',
   privacy: 'privacy',
   startup: 'startup',
+  developerEnvironments: 'developer-environments',
   history: 'history',
   settings: 'settings',
 } as const;
@@ -108,6 +109,7 @@ export const PRIMARY_NAV_GROUPS = [
     items: [
       { id: PAGE_IDS.applicationUninstall, icon: ICON_NAMES.uninstall },
       { id: PAGE_IDS.startup, icon: ICON_NAMES.startup },
+      { id: PAGE_IDS.developerEnvironments, icon: ICON_NAMES.package },
       { id: PAGE_IDS.systemOptimization, icon: ICON_NAMES.systemOptimization },
       { id: PAGE_IDS.systemMaintenance, icon: ICON_NAMES.systemMaintenance },
     ],

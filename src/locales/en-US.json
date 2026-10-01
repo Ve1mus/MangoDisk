@@ -109,7 +109,8 @@
     "privacy": "Privacy Cleanup",
     "startup": "Startup Items",
     "history": "Operation History",
-    "settings": "Settings"
+    "settings": "Settings",
+    "developer-environments": "Developer Environments"
   },
   "fullDiskAccessGuidance": {
     "summary": "Enable Full Disk Access for more complete results",
@@ -4046,5 +4047,52 @@
     "autoRuleExclusions": "Excluded apps: {count}",
     "revealAction": "Open location",
     "quitAction": "Quit"
+  },
+  "developerEnvironments": {
+    "title": "Developer Environments",
+    "subtitle": "Review Homebrew packages and Python virtual environments installed on this computer",
+    "rescan": "Rescan",
+    "scanning": "Scanning…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Python environments"
+    },
+    "summary": "{count} items · {size}",
+    "homebrew": {
+      "unsupportedTitle": "Homebrew is not installed",
+      "unsupportedDescription": "No Homebrew Cellar or Caskroom was found on this computer",
+      "emptyTitle": "No packages",
+      "emptyDescription": "Homebrew has no installed packages",
+      "kinds": {
+        "formula": "Formula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "Installed by you",
+        "dependency": "Dependency",
+        "unusedDependency": "Unused dependency"
+      },
+      "requiredBy": "Required by {names}",
+      "versions": "Versions: {versions}",
+      "installedAt": "Installed {date}",
+      "hint": "Removal is done with Homebrew. Copy the command and run it in Terminal; brew refuses to remove a package other packages still need"
+    },
+    "python": {
+      "emptyTitle": "No virtual environments found",
+      "emptyDescription": "No pyvenv.cfg was found in your home folder",
+      "incomplete": "The search stopped early because it reached its size or time limit. Some environments may be missing",
+      "flags": {
+        "interpreterMissing": "Python is missing",
+        "homeRoot": "In home folder",
+        "noProject": "No project nearby",
+        "toolManaged": "Managed by a tool",
+        "systemSitePackages": "Uses system packages"
+      },
+      "version": "Python {version}",
+      "files": "{count} files",
+      "createdAt": "Created {date}",
+      "reveal": "Show in file manager",
+      "hint": "Environments without a project, or sitting directly in the home folder, are the most likely to be unneeded or installed globally by mistake"
+    }
   }
 }
