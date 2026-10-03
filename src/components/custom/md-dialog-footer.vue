@@ -30,7 +30,6 @@ withDefaults(
   box-sizing: border-box;
   min-height: var(--layout-dialog-footer-height);
   flex: none;
-  flex-wrap: wrap;
   align-items: center;
   border-top-width: 1px;
   padding: var(--layout-dialog-footer-padding);
