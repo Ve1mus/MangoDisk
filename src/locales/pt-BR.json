@@ -116,7 +116,10 @@
     "privacy": "Privacidade",
     "startup": "Inicialização",
     "history": "Histórico",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "developer-environments": "Ambientes de desenvolvimento",
+    "open-file-holders": "Arquivos abertos",
+    "memory-analysis": "Memória"
   },
   "fullDiskAccessGuidance": {
     "summary": "Verificar acesso ao disco",
@@ -4075,5 +4078,167 @@
     "autoRuleExclusions": "Aplicativos excluídos da liberação: {count}",
     "revealAction": "Abrir localização",
     "quitAction": "Encerrar"
+  },
+  "developerEnvironments": {
+    "title": "Ambientes de desenvolvimento",
+    "subtitle": "Veja os pacotes do Homebrew e os ambientes virtuais Python instalados neste computador",
+    "rescan": "Verificar novamente",
+    "scanning": "Verificando…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Ambientes Python"
+    },
+    "summary": "{count} itens · {size}",
+    "homebrew": {
+      "unsupportedTitle": "O Homebrew não está instalado",
+      "unsupportedDescription": "Nenhum Cellar ou Caskroom do Homebrew foi encontrado neste computador",
+      "emptyTitle": "Nenhum pacote",
+      "emptyDescription": "O Homebrew não tem pacotes instalados",
+      "kinds": {
+        "formula": "Fórmula",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "Instalado por você",
+        "dependency": "Dependência",
+        "unusedDependency": "Dependência não utilizada"
+      },
+      "requiredBy": "Exigido por ({count})",
+      "versions": "Versões: {versions}",
+      "installedAt": "Instalado em {date}",
+      "hint": "A desinstalação é executada pelo Homebrew, que se recusa a remover um pacote de que outros pacotes ainda precisam. Você também pode copiar o comando e executá-lo no Terminal",
+      "idleTitle": "Revise os pacotes do Homebrew",
+      "idleDescription": "Verifique para listar os pacotes instalados, quem depende de quem e quais você pode remover",
+      "dependsOn": "Depende de ({count})",
+      "dependsOnCount": "Depende de {count}",
+      "requiredByCount": "Exigido por {count}",
+      "noRelations": "Nenhum",
+      "blocked": "Desinstale primeiro {names}. Eles ainda precisam deste pacote",
+      "uninstall": "Desinstalar",
+      "uninstallTitle": "Desinstalar {name}?",
+      "uninstallDescription": "O Homebrew remove o pacote deste computador. Isso não pode ser desfeito",
+      "uninstallSummary": "Libera cerca de",
+      "formulaNote": "Pacotes de que somente este precisava continuam instalados e serão listados como dependências não utilizadas",
+      "caskNote": "Alguns casks exigem a senha de administrador. Se o Homebrew não conseguir concluir, execute o comando copiado no Terminal",
+      "notices": {
+        "removed": "{name} foi desinstalado e {size} foram liberados",
+        "notInstalled": "{name} já está desinstalado",
+        "stillRequired": "{name} não foi desinstalado porque {names} ainda precisam dele",
+        "stillInstalled": "O Homebrew terminou, mas {name} ainda está instalado",
+        "failed": "O Homebrew não conseguiu desinstalar {name}. Copie o comando e execute-o no Terminal para ver o motivo"
+      }
+    },
+    "python": {
+      "emptyTitle": "Nenhum ambiente virtual encontrado",
+      "emptyDescription": "Nenhum pyvenv.cfg foi encontrado na sua pasta pessoal",
+      "incomplete": "A busca parou antes porque atingiu o limite de tamanho ou de tempo. Alguns ambientes podem estar faltando",
+      "flags": {
+        "interpreterMissing": "Python ausente",
+        "homeRoot": "Na pasta pessoal",
+        "noProject": "Sem projeto por perto",
+        "toolManaged": "Gerenciado por uma ferramenta",
+        "systemSitePackages": "Usa pacotes do sistema"
+      },
+      "version": "Python {version}",
+      "files": "{count} arquivos",
+      "createdAt": "Criado em {date}",
+      "reveal": "Mostrar no gerenciador de arquivos",
+      "hint": "Ambientes sem projeto, ou diretamente na pasta pessoal, são os mais prováveis de serem desnecessários ou instalados globalmente por engano",
+      "idleTitle": "Encontre ambientes Python",
+      "idleDescription": "Verifique sua pasta pessoal em busca de ambientes virtuais Python, inclusive os esquecidos e os quebrados",
+      "delete": "Excluir",
+      "deleteTitle": "Excluir {name}?",
+      "deleteDescription": "{path} e tudo o que está dentro dele serão excluídos permanentemente. Recrie-o com seu gerenciador de pacotes se precisar dele novamente",
+      "deleteSummary": "Libera cerca de",
+      "deleteNote": "Somente a pasta do ambiente é excluída; os arquivos do seu projeto não são tocados",
+      "toolManagedNote": "Uma ferramenta gerencia este ambiente e pode recriá-lo quando necessário",
+      "notices": {
+        "removed": "{name} foi excluído e {size} foram liberados",
+        "notFound": "{name} não existe mais",
+        "notAnEnvironment": "{name} não é um ambiente virtual, por isso foi deixado no lugar",
+        "outsideScope": "{name} está fora das pastas gerenciadas pelo MangoDisk, por isso foi deixado no lugar",
+        "unexpectedContents": "{name} contém arquivos que um ambiente virtual não cria, como arquivos de projeto, por isso foi deixado no lugar",
+        "failed": "{name} não pôde ser totalmente excluído. Feche os programas que o usam e tente novamente"
+      }
+    },
+    "scan": "Verificar",
+    "removing": "Removendo…"
+  },
+  "openFileHolders": {
+    "title": "Arquivos abertos",
+    "subtitle": "Veja quais apps mantêm arquivos abertos ou descubra o que está usando um arquivo, pasta ou volume",
+    "pathLabel": "Caminho",
+    "pathPlaceholder": "Opcional: um arquivo, pasta ou volume para procurar",
+    "chooseFolder": "Escolher pasta",
+    "find": "Buscar",
+    "searching": "Buscando…",
+    "emptyTitle": "Nada está usando este caminho",
+    "emptyDescription": "Nenhum processo que você pode inspecionar o mantém aberto",
+    "visibilityNotice": "Somente os processos da sua conta são listados. Processos de outros usuários e do sistema também podem manter arquivos abertos",
+    "pid": "PID {pid}",
+    "openFiles": "Arquivos abertos: {count}",
+    "close": "Fechar",
+    "forceClose": "Forçar encerramento",
+    "confirmTitle": "Fechar {name}?",
+    "confirmDescription": "O MangoDisk pede primeiro que o app seja encerrado, para que ele possa salvar seu trabalho",
+    "forceConfirmTitle": "Forçar o encerramento de {name}?",
+    "forceConfirmDescription": "O processo termina imediatamente e dados não salvos podem ser perdidos",
+    "closed": "O processo foi encerrado",
+    "stillRunning": "O processo ainda está em execução. Você pode forçar o encerramento",
+    "searchAgain": "Buscar novamente",
+    "idleTitle": "Veja quais apps mantêm arquivos abertos",
+    "idleDescription": "A busca lista todos os apps com arquivos abertos, com seus processos e os arquivos que mantêm. Informe um caminho para encontrar somente o que o usa",
+    "emptyAllTitle": "Nenhum arquivo aberto encontrado",
+    "emptyAllDescription": "Nenhum processo que você pode inspecionar tem arquivos abertos",
+    "summary": "{applications} apps · {processes} processos · {files} arquivos abertos",
+    "holdingPath": "Usando {path}",
+    "processCount": "{count} processos",
+    "moreFiles": "e mais {count}",
+    "helperBadge": "Auxiliar"
+  },
+  "memoryAnalysis": {
+    "title": "Memória",
+    "subtitle": "Veja o que está usando sua RAM e quais apps fechar",
+    "refresh": "Atualizar",
+    "analyzing": "Analisando a memória…",
+    "idleTitle": "Descubra o que está usando sua memória",
+    "idleDescription": "O MangoDisk mede para onde a memória vai e classifica os apps pelo quanto usam, incluindo a memória que o sistema comprimiu ou moveu para o disco",
+    "analyze": "Analisar memória",
+    "barLabel": "Como a memória é usada",
+    "categories": {
+      "application": "Memória de apps",
+      "wired": "Fixa",
+      "compressed": "Comprimida",
+      "cached": "Arquivos em cache",
+      "free": "Livre"
+    },
+    "categoryHints": {
+      "application": "Memória mantida pelos apps em execução",
+      "wired": "Memória do sistema que não pode ser comprimida nem movida para o disco",
+      "compressed": "Memória inativa comprimida para abrir espaço; consome CPU quando os apps voltam à atividade",
+      "cached": "Arquivos usados recentemente mantidos para dar velocidade; liberados quando os apps precisam de espaço",
+      "free": "Memória sem uso"
+    },
+    "pressure": {
+      "label": "Pressão da memória",
+      "normal": "Normal",
+      "warning": "Elevada",
+      "critical": "Crítica"
+    },
+    "swap": "Swap: {used} de {total}",
+    "findings": {
+      "pressureCritical": "A pressão da memória está crítica. Feche os maiores apps abaixo para evitar lentidão",
+      "pressureWarning": "A pressão da memória está elevada. Fechar um dos maiores apps abaixo ajudará",
+      "swapInUse": "{size} de conteúdo da memória foram movidos para o disco (swap). Os apps ficam lentos quando o sistema precisa lê-los de volta",
+      "heavyCompression": "{size} de memória estão comprimidos. Seus apps mantêm mais dados do que cabe na RAM"
+    },
+    "consumersTitle": "Apps por uso de memória",
+    "metricFootprint": "Pegada de memória",
+    "metricResident": "Memória residente",
+    "footprintHint": "A pegada inclui a memória que o sistema comprimiu ou moveu para o disco, então a soma pode superar sua RAM. Use os valores para classificar os apps",
+    "noConsumers": "Nenhum aplicativo informou uso de memória",
+    "moreProcesses": "e mais {count} processos menores",
+    "approximateHint": "Alguns processos não permitem a leitura de sua pegada, por isso o tamanho residente é usado (≈)",
+    "pid": "PID {pid}"
   }
 }

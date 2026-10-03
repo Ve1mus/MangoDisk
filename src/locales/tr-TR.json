@@ -116,7 +116,10 @@
     "privacy": "Gizlilik temizliği",
     "startup": "Başlangıç öğeleri",
     "history": "İşlem geçmişi",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "developer-environments": "Geliştirici Ortamları",
+    "open-file-holders": "Açık Dosyalar",
+    "memory-analysis": "Bellek"
   },
   "fullDiskAccessGuidance": {
     "summary": "Disk erişimini kontrol edin",
@@ -4075,5 +4078,167 @@
     "autoRuleExclusions": "Hariç tutulan uygulamalar: {count}",
     "revealAction": "Konumu aç",
     "quitAction": "Çık"
+  },
+  "developerEnvironments": {
+    "title": "Geliştirici Ortamları",
+    "subtitle": "Bu bilgisayarda kurulu Homebrew paketlerini ve Python sanal ortamlarını inceleyin",
+    "rescan": "Yeniden tara",
+    "scanning": "Taranıyor…",
+    "tabs": {
+      "homebrew": "Homebrew",
+      "python": "Python ortamları"
+    },
+    "summary": "{count} öğe · {size}",
+    "homebrew": {
+      "unsupportedTitle": "Homebrew kurulu değil",
+      "unsupportedDescription": "Bu bilgisayarda Homebrew Cellar veya Caskroom bulunamadı",
+      "emptyTitle": "Paket yok",
+      "emptyDescription": "Homebrew ile kurulmuş paket yok",
+      "kinds": {
+        "formula": "Formül",
+        "cask": "Cask"
+      },
+      "roles": {
+        "requested": "Sizin kurduğunuz",
+        "dependency": "Bağımlılık",
+        "unusedDependency": "Kullanılmayan bağımlılık"
+      },
+      "requiredBy": "Gerektiren ({count})",
+      "versions": "Sürümler: {versions}",
+      "installedAt": "Kurulum: {date}",
+      "hint": "Kaldırma işlemini Homebrew yürütür; diğer paketlerin hâlâ ihtiyaç duyduğu bir paketi kaldırmayı reddeder. Komutu kopyalayıp Terminal'de de çalıştırabilirsiniz",
+      "idleTitle": "Homebrew paketlerini inceleyin",
+      "idleDescription": "Kurulu paketleri, hangisinin hangisine bağlı olduğunu ve hangilerini kaldırabileceğinizi görmek için tarayın",
+      "dependsOn": "Bağımlı olduğu ({count})",
+      "dependsOnCount": "{count} pakete bağlı",
+      "requiredByCount": "{count} paket gerektiriyor",
+      "noRelations": "Yok",
+      "blocked": "Önce {names} kaldırın. Bu pakete hâlâ ihtiyaç duyuyorlar",
+      "uninstall": "Kaldır",
+      "uninstallTitle": "{name} kaldırılsın mı?",
+      "uninstallDescription": "Homebrew paketi bu bilgisayardan kaldırır. Bu işlem geri alınamaz",
+      "uninstallSummary": "Yaklaşık olarak boşaltır",
+      "formulaNote": "Yalnızca bu paketin ihtiyaç duyduğu paketler kurulu kalır ve kullanılmayan bağımlılık olarak listelenir",
+      "caskNote": "Bazı cask'ler yönetici parolası gerektirir. Homebrew işlemi tamamlayamazsa kopyalanan komutu Terminal'de çalıştırın",
+      "notices": {
+        "removed": "{name} kaldırıldı ve {size} boşaltıldı",
+        "notInstalled": "{name} zaten kaldırılmış",
+        "stillRequired": "{name}, {names} hâlâ ihtiyaç duyduğu için kaldırılmadı",
+        "stillInstalled": "Homebrew işlemi bitirdi ancak {name} hâlâ kurulu",
+        "failed": "Homebrew {name} paketini kaldıramadı. Nedenini görmek için komutu kopyalayıp Terminal'de çalıştırın"
+      }
+    },
+    "python": {
+      "emptyTitle": "Sanal ortam bulunamadı",
+      "emptyDescription": "Ana klasörünüzde pyvenv.cfg bulunamadı",
+      "incomplete": "Arama boyut veya süre sınırına ulaştığı için erken durdu. Bazı ortamlar eksik olabilir",
+      "flags": {
+        "interpreterMissing": "Python eksik",
+        "homeRoot": "Ana klasörde",
+        "noProject": "Yakınında proje yok",
+        "toolManaged": "Bir araç tarafından yönetiliyor",
+        "systemSitePackages": "Sistem paketlerini kullanıyor"
+      },
+      "version": "Python {version}",
+      "files": "{count} dosya",
+      "createdAt": "Oluşturulma: {date}",
+      "reveal": "Dosya yöneticisinde göster",
+      "hint": "Projesi olmayan veya doğrudan ana klasörde duran ortamların gereksiz olma veya yanlışlıkla genel kurulma olasılığı en yüksektir",
+      "idleTitle": "Python ortamlarını bulun",
+      "idleDescription": "Ana klasörünüzü unutulmuş ve bozuk olanlar dahil Python sanal ortamları için tarayın",
+      "delete": "Sil",
+      "deleteTitle": "{name} silinsin mi?",
+      "deleteDescription": "{path} ve içindeki her şey kalıcı olarak silinecek. Yeniden gerekirse paket yöneticinizle yeniden oluşturun",
+      "deleteSummary": "Yaklaşık olarak boşaltır",
+      "deleteNote": "Yalnızca ortam klasörü silinir; proje dosyalarınıza dokunulmaz",
+      "toolManagedNote": "Bu ortam bir araç tarafından yönetiliyor ve gerektiğinde yeniden oluşturabilir",
+      "notices": {
+        "removed": "{name} silindi ve {size} boşaltıldı",
+        "notFound": "{name} artık yok",
+        "notAnEnvironment": "{name} bir sanal ortam değil, bu yüzden olduğu gibi bırakıldı",
+        "outsideScope": "{name}, MangoDisk'in yönettiği klasörlerin dışında olduğu için olduğu gibi bırakıldı",
+        "unexpectedContents": "{name}, sanal ortamın oluşturmadığı dosyalar (ör. proje dosyaları) içerdiği için olduğu gibi bırakıldı",
+        "failed": "{name} tamamen silinemedi. Onu kullanan programları kapatıp yeniden deneyin"
+      }
+    },
+    "scan": "Tara",
+    "removing": "Kaldırılıyor…"
+  },
+  "openFileHolders": {
+    "title": "Açık Dosyalar",
+    "subtitle": "Hangi uygulamaların dosyaları açık tuttuğunu görün veya bir dosyayı, klasörü ya da birimi neyin tuttuğunu bulun",
+    "pathLabel": "Yol",
+    "pathPlaceholder": "İsteğe bağlı: aranacak dosya, klasör veya birim",
+    "chooseFolder": "Klasör seç",
+    "find": "Ara",
+    "searching": "Aranıyor…",
+    "emptyTitle": "Bu yolu tutan bir şey yok",
+    "emptyDescription": "İnceleyebildiğiniz hiçbir süreç bunu açık tutmuyor",
+    "visibilityNotice": "Yalnızca hesabınıza ait süreçler listelenir. Diğer kullanıcıların ve sistemin süreçleri de dosya tutuyor olabilir",
+    "pid": "PID {pid}",
+    "openFiles": "Açık dosyalar: {count}",
+    "close": "Kapat",
+    "forceClose": "Zorla kapat",
+    "confirmTitle": "{name} kapatılsın mı?",
+    "confirmDescription": "MangoDisk önce uygulamadan çıkmasını ister; böylece uygulama çalışmasını kaydedebilir",
+    "forceConfirmTitle": "{name} zorla kapatılsın mı?",
+    "forceConfirmDescription": "Süreç hemen sonlandırılır ve kaydedilmemiş veriler kaybolabilir",
+    "closed": "Süreç durduruldu",
+    "stillRunning": "Süreç hâlâ çalışıyor. Zorla kapatabilirsiniz",
+    "searchAgain": "Yeniden ara",
+    "idleTitle": "Hangi uygulamaların dosyaları açık tuttuğunu görün",
+    "idleDescription": "Arama, açık dosyası olan her uygulamayı, süreçlerini ve tuttukları dosyaları listeler. Yalnızca bir yolu tutanları bulmak için yol girin",
+    "emptyAllTitle": "Açık dosya bulunamadı",
+    "emptyAllDescription": "İnceleyebildiğiniz hiçbir sürecin açık dosyası yok",
+    "summary": "{applications} uygulama · {processes} süreç · {files} açık dosya",
+    "holdingPath": "{path} yolunu tutuyor",
+    "processCount": "{count} süreç",
+    "moreFiles": "ve {count} tane daha",
+    "helperBadge": "Yardımcı"
+  },
+  "memoryAnalysis": {
+    "title": "Bellek",
+    "subtitle": "RAM'i neyin kullandığını ve hangi uygulamaları kapatmanız gerektiğini görün",
+    "refresh": "Yenile",
+    "analyzing": "Bellek analiz ediliyor…",
+    "idleTitle": "Belleği neyin kullandığını bulun",
+    "idleDescription": "MangoDisk belleğin nereye gittiğini ölçer ve uygulamaları kullanımlarına göre sıralar; sistemin sıkıştırdığı veya diske taşıdığı bellek de dahildir",
+    "analyze": "Belleği analiz et",
+    "barLabel": "Belleğin kullanım dağılımı",
+    "categories": {
+      "application": "Uygulama belleği",
+      "wired": "Sabit",
+      "compressed": "Sıkıştırılmış",
+      "cached": "Önbellekteki dosyalar",
+      "free": "Boş"
+    },
+    "categoryHints": {
+      "application": "Çalışan uygulamaların tuttuğu bellek",
+      "wired": "Sıkıştırılamayan veya diske taşınamayan sistem belleği",
+      "compressed": "Yer açmak için sıkıştırılan etkin olmayan bellek; uygulamalar uyandığında işlemciyi yorar",
+      "cached": "Hız için tutulan yakın zamanda kullanılmış dosyalar; uygulamalar yer istediğinde serbest bırakılır",
+      "free": "Kullanılmayan bellek"
+    },
+    "pressure": {
+      "label": "Bellek baskısı",
+      "normal": "Normal",
+      "warning": "Yüksek",
+      "critical": "Kritik"
+    },
+    "swap": "Takas: {total} içinde {used}",
+    "findings": {
+      "pressureCritical": "Bellek baskısı kritik. Yavaşlamayı önlemek için aşağıdaki en büyük uygulamaları kapatın",
+      "pressureWarning": "Bellek baskısı yüksek. Aşağıdaki en büyük uygulamalardan birini kapatmak yardımcı olur",
+      "swapInUse": "{size} bellek içeriği diske (takas) taşındı. Sistem geri okumak zorunda kaldığında uygulamalar yavaşlar",
+      "heavyCompression": "{size} bellek sıkıştırılmış. Uygulamalarınız RAM'e sığandan fazla veri tutuyor"
+    },
+    "consumersTitle": "Bellek kullanımına göre uygulamalar",
+    "metricFootprint": "Bellek ayak izi",
+    "metricResident": "Yerleşik bellek",
+    "footprintHint": "Ayak izi, sistemin sıkıştırdığı veya diske taşıdığı belleği de içerir; bu yüzden toplam RAM'inizden büyük olabilir. Uygulamaları sıralamak için kullanın",
+    "noConsumers": "Hiçbir uygulama bellek kullanımı bildirmedi",
+    "moreProcesses": "ve {count} daha küçük süreç",
+    "approximateHint": "Bazı süreçler ayak izinin okunmasına izin vermez, bu yüzden yerleşik boyutları kullanılır (≈)",
+    "pid": "PID {pid}"
   }
 }
