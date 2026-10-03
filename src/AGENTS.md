@@ -30,6 +30,7 @@ Pages may present several domains together, but shared product orchestration mus
 ## Text, status, and logging
 
 - All user-facing strings belong in locale resources. Update every supported locale in the same change.
+- Register new locales in `lib/models/settings.ts`, `i18n.ts`, `locales/modules/`, the build and locale checks, and `../src-tauri/src/services/native_labels.rs`. Keep interpolation arguments and safety meanings aligned with the current English resources; use natural local phrasing.
 - Every catalog cleanup rule needs a non-empty name, description, and impact in each supported locale; `pnpm check:i18n` verifies coverage.
 - Constants are domain-owned. Do not move every unrelated constant into a new global constants file.
 - Render behavior from typed status, risk, capability, and reason codes. Free-form backend messages are diagnostics, not UI control flow.
@@ -48,6 +49,7 @@ Pages may present several domains together, but shared product orchestration mus
 - Keep page headers and content-height behavior consistent through project-owned shell components.
 - Use `MdSettingsGroup` and `MdSettingsRow` for settings-page groups and rows. These components own spacing, alignment, typography, responsive controls, and hover/focus feedback; callers own business state and actions.
 - Use Shadcn-Vue Tooltip (or `MdTooltip`) for hints; do not use native HTML `title` attributes. Component title props for visible headings are unrelated.
+- Modal windows use `Dialog`, `MdDialogContent`, `MdDialogHeader`, and `MdDialogFooter`; active operations use `MdOperationDialog`. Keep dismissal separate from cancellation, and retain confirmation for destructive cancellation. Page-local progress workspaces and non-modal floating panels retain their own interaction contracts.
 - Never place raw SVG markup in a template. Add or reuse a component under `components/icons/`.
 
 ## Validation

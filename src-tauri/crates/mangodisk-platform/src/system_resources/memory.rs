@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
-use sysinfo::{MemoryRefreshKind, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
+use sysinfo::{MemoryRefreshKind, System};
+#[cfg(not(any(windows, target_os = "macos")))]
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, UpdateKind};
 
 use crate::{PlatformError, PlatformErrorCode, PlatformResult};
 
@@ -9,7 +11,27 @@ pub struct ProcessMemory {
     pub pid: u32,
     pub name: String,
     pub executable: Option<PathBuf>,
-    pub resident_bytes: u64,
+    pub used_bytes: Option<u64>,
+    pub is_application: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ProcessMemoryKind {
+    PhysicalFootprint,
+    PrivateWorkingSet,
+    ResidentSet,
+}
+impl ProcessMemoryKind {
+    pub fn native() -> Self {
+        if cfg!(target_os = "macos") {
+            Self::PhysicalFootprint
+        } else if cfg!(windows) {
+            Self::PrivateWorkingSet
+        } else {
+            Self::ResidentSet
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +40,7 @@ pub struct NativeMemorySnapshot {
     pub used_bytes: u64,
     pub free_bytes: u64,
     pub swap_used_bytes: u64,
+    pub process_memory_kind: ProcessMemoryKind,
     /// None means no process enumeration was requested, not an empty process list.
     pub processes: Option<Vec<ProcessMemory>>,
 }
@@ -29,6 +52,10 @@ pub trait MemorySource: Send {
 
 pub struct MemorySampler {
     system: System,
+    #[cfg(target_os = "macos")]
+    processes: super::process_snapshot_macos::ProcessSnapshotReader,
+    #[cfg(windows)]
+    processes: super::process_snapshot_windows::ProcessSnapshotReader,
 }
 
 impl Default for MemorySampler {
@@ -36,6 +63,10 @@ impl Default for MemorySampler {
         // Do not load CPU topology, disks, users, or process command lines at startup.
         Self {
             system: System::new(),
+            #[cfg(windows)]
+            processes: Default::default(),
+            #[cfg(target_os = "macos")]
+            processes: Default::default(),
         }
     }
 }
@@ -50,35 +81,79 @@ impl MemorySource for MemorySampler {
                 "system memory counters are unavailable",
             ));
         }
-        let processes = include_processes.then(|| {
-            // Memory and image paths are the only required fields. Remove exited processes
-            // on every refresh, and never request environment variables or command lines.
-            self.system.refresh_processes_specifics(
-                ProcessesToUpdate::All,
-                true,
-                ProcessRefreshKind::nothing()
-                    .with_memory()
-                    .with_exe(UpdateKind::OnlyIfNotSet),
-            );
-            self.system
-                .processes()
-                .iter()
-                .map(|(pid, process)| ProcessMemory {
-                    pid: pid.as_u32(),
-                    name: process.name().to_string_lossy().into_owned(),
-                    executable: process.exe().map(PathBuf::from),
-                    resident_bytes: process.memory(),
+        let processes = if include_processes {
+            #[cfg(windows)]
+            let processes = self
+                .processes
+                .read()
+                .ok_or_else(|| {
+                    PlatformError::new(
+                        PlatformErrorCode::OperationFailed,
+                        "private working set counters unavailable",
+                    )
+                })?
+                .into_iter()
+                .map(|row| ProcessMemory {
+                    pid: row.counter.pid,
+                    name: row.counter.name,
+                    executable: row.counter.executable,
+                    used_bytes: Some(row.private_working_set_bytes),
+                    is_application: false,
                 })
-                .collect()
-        });
+                .collect();
+            #[cfg(target_os = "macos")]
+            let processes = self
+                .processes
+                .read()?
+                .into_iter()
+                .map(|row| ProcessMemory {
+                    pid: row.counter.pid,
+                    name: row.counter.name,
+                    executable: row.counter.executable,
+                    used_bytes: row.footprint,
+                    is_application: false,
+                })
+                .collect::<Vec<_>>();
+            #[cfg(not(any(windows, target_os = "macos")))]
+            let processes = {
+                // RSS platforms need one process pass for identity and resident memory.
+                let refresh = ProcessRefreshKind::nothing()
+                    .with_exe(UpdateKind::OnlyIfNotSet)
+                    .with_memory();
+                self.system
+                    .refresh_processes_specifics(ProcessesToUpdate::All, true, refresh);
+                self.system
+                    .processes()
+                    .iter()
+                    .map(|(pid, process)| ProcessMemory {
+                        pid: pid.as_u32(),
+                        name: process.name().to_string_lossy().into_owned(),
+                        executable: process.exe().map(PathBuf::from),
+                        used_bytes: Some(process.memory()),
+                        is_application: false,
+                    })
+                    .collect::<Vec<_>>()
+            };
+            #[cfg(target_os = "macos")]
+            let processes = {
+                let mut rows = processes;
+                super::memory_macos::fill_application_metadata(&mut rows);
+                rows
+            };
+            Some(processes)
+        } else {
+            None
+        };
+        #[cfg(target_os = "macos")]
+        let (used_bytes, free_bytes) = super::memory_macos::overview(self.system.total_memory())?;
+        #[cfg(not(target_os = "macos"))]
+        let (used_bytes, free_bytes) = (self.system.used_memory(), self.system.free_memory());
         Ok(NativeMemorySnapshot {
             total_bytes: self.system.total_memory(),
-            used_bytes: self.system.used_memory(),
-            // Expose the native free-page counter explicitly. sysinfo's macOS
-            // "available" estimate can saturate at zero with a large compressor;
-            // free memory is intentionally not presented as memory pressure.
-            free_bytes: self.system.free_memory(),
+            used_bytes,
+            free_bytes,
             swap_used_bytes: self.system.used_swap(),
+            process_memory_kind: ProcessMemoryKind::native(),
             processes,
         })
     }
@@ -99,10 +174,8 @@ mod tests {
         let detailed = sampler
             .sample(true)
             .expect("process sampling should complete");
-        assert!(detailed
-            .processes
-            .unwrap()
-            .iter()
-            .any(|process| { process.pid == std::process::id() && process.resident_bytes > 0 }));
+        assert!(detailed.processes.unwrap().iter().any(|process| {
+            process.pid == std::process::id() && process.used_bytes.is_some_and(|bytes| bytes > 0)
+        }));
     }
 }
