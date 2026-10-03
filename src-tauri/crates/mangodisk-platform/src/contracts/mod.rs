@@ -1,7 +1,11 @@
 mod name_exclusions;
 pub use name_exclusions::{ExcludedNameKind, NameExclusions, ScanNameExclusion};
 mod ai_models;
+mod application_identity;
 mod applications;
+pub use application_identity::{
+    ApplicationIdentityMetadata, ApplicationSigningKind, ApplicationSigningMetadata,
+};
 mod directory_aggregate;
 mod disk_cleanup;
 mod error;
@@ -40,7 +44,10 @@ pub use disk_cleanup::{
 pub use error::{
     PlatformError, PlatformErrorCode, PlatformFailureReason, PlatformMutationState, PlatformResult,
 };
-pub use file_read::{FileReadFailures, FileReadStage};
+pub use file_read::{
+    FileReadFailureDetail, FileReadFailureReason, FileReadFailures, FileReadStage,
+    MAX_FILE_READ_FAILURE_DETAILS,
+};
 pub use platform::Platform;
 pub use privacy::{
     PlatformPrivacyApplication, PlatformPrivacyApplicationNativeTraceKind,

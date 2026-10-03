@@ -5,13 +5,14 @@ use mangodisk_platform::system_resources::{
     network::{InterfaceSample, NetworkInterface},
 };
 use serde::Serialize;
+use std::sync::Arc;
 
 use super::{
     cpu::{CpuBaselineReason, CpuDelta},
     disk::{self, DiskUsage},
     disk_io::{DiskIoDelta, DiskIoRate},
     metrics::{CpuUsage, MetricId, MetricReading, MetricStatus, Trend, TrendPoint},
-    models::SystemResourceSnapshot,
+    models::{ProcessCpuSummary, SystemResourceSnapshot},
     network::{self, NetworkDelta, NetworkRate, NetworkSelectionReason},
 };
 
@@ -21,6 +22,8 @@ pub struct ResourceReadings {
     pub schema_version: u32,
     pub observed_at_ms: u64,
     pub cpu: MetricReading<CpuUsage>,
+    pub cpu_processes: MetricReading<Arc<ProcessCpuSummary>>,
+    pub memory_processes: MetricReading<Arc<super::models::ProcessMemorySummary>>,
     pub memory: MetricReading<SystemResourceSnapshot>,
     pub network: MetricReading<NetworkRate>,
     pub disk: MetricReading<DiskUsage>,
@@ -36,9 +39,11 @@ pub struct ResourceReadings {
 impl Default for ResourceReadings {
     fn default() -> Self {
         Self {
-            schema_version: 3,
+            schema_version: 7,
             observed_at_ms: 0,
             cpu: MetricReading::default(),
+            cpu_processes: MetricReading::default(),
+            memory_processes: MetricReading::default(),
             memory: MetricReading::default(),
             network: MetricReading::default(),
             disk: MetricReading::default(),
@@ -95,7 +100,11 @@ impl ResourceCache {
         }
     }
 
-    pub fn memory(&mut self, snapshot: SystemResourceSnapshot) {
+    pub fn memory(&mut self, mut snapshot: SystemResourceSnapshot) {
+        if let Some(summary) = snapshot.processes.take() {
+            self.readings.memory_processes =
+                MetricReading::ready(Arc::new(summary), snapshot.sampled_at_ms);
+        }
         let sampled_at_ms = snapshot.sampled_at_ms;
         self.memory_history.push(TrendPoint {
             sampled_at_ms,
@@ -175,6 +184,25 @@ impl ResourceCache {
         reason
     }
 
+    pub fn cpu_processes(&mut self, reading: MetricReading<ProcessCpuSummary>) {
+        if reading.value.is_some() || self.readings.cpu_processes.value.is_none() {
+            self.readings.cpu_processes = MetricReading {
+                status: reading.status,
+                sampled_at_ms: reading.sampled_at_ms,
+                value: reading.value.map(Arc::new),
+            };
+        } else if reading.status != MetricStatus::Loading {
+            // A failed query changes freshness, not the last successful observation.
+            self.readings.cpu_processes.status = reading.status;
+        }
+        // Baseline-only observations retain the original timestamp. snapshot() expires
+        // them normally; explicit disabling still clears the ranking and its identity.
+    }
+
+    pub fn clear_cpu_processes(&mut self) {
+        self.readings.cpu_processes = MetricReading::default();
+    }
+
     pub fn volumes(&mut self, volumes: Vec<ResourceVolume>) {
         self.readings.volumes = volumes;
     }
@@ -193,7 +221,10 @@ impl ResourceCache {
                 self.readings.cpu.status = status;
                 self.cpu_delta.reset();
             }
-            MetricId::Memory => self.readings.memory.status = status,
+            MetricId::Memory => {
+                self.readings.memory.status = status;
+                self.readings.memory_processes.status = status;
+            }
             MetricId::Network => {
                 self.readings.network.status = status;
                 self.network_delta.reset();
@@ -208,7 +239,8 @@ impl ResourceCache {
         match metric {
             MetricId::Cpu => self.cpu_delta.reset(),
             MetricId::Network => self.network_delta.reset(),
-            MetricId::Memory | MetricId::Disk => {}
+            MetricId::Memory => self.readings.memory_processes = MetricReading::default(),
+            MetricId::Disk => {}
         }
     }
 
@@ -233,7 +265,9 @@ impl ResourceCache {
         }
     }
 
-    pub fn snapshot(&mut self, now_ms: u64) -> ResourceReadings {
+    /// Update freshness without copying application identities or rebuilding histories.
+    pub fn expire(&mut self, now_ms: u64) -> bool {
+        let before = self.statuses();
         self.readings.observed_at_ms = now_ms;
         self.readings
             .cpu
@@ -248,6 +282,29 @@ impl ResourceCache {
             .disk
             .expire(now_ms, MetricId::Disk.freshness_ms());
         self.readings.disk_io.expire(now_ms, 5000);
+        self.readings
+            .memory_processes
+            .expire(now_ms, MetricId::Memory.freshness_ms());
+        self.readings
+            .cpu_processes
+            .expire(now_ms, MetricId::Cpu.freshness_ms());
+        before != self.statuses()
+    }
+
+    fn statuses(&self) -> [MetricStatus; 7] {
+        [
+            self.readings.cpu.status,
+            self.readings.memory.status,
+            self.readings.network.status,
+            self.readings.disk.status,
+            self.readings.disk_io.status,
+            self.readings.cpu_processes.status,
+            self.readings.memory_processes.status,
+        ]
+    }
+
+    pub fn snapshot(&mut self, now_ms: u64) -> ResourceReadings {
+        self.expire(now_ms);
         self.readings.memory_history = self.memory_history.snapshot(now_ms);
         self.readings.disk_io_history = self.disk_io_history.snapshot(now_ms);
         self.readings.cpu_history = self.cpu_history.snapshot(now_ms);
@@ -260,6 +317,160 @@ impl ResourceCache {
 mod tests {
     use super::*;
     use mangodisk_platform::system_resources::cpu::CpuCounters;
+
+    #[test]
+    fn snapshots_share_immutable_rankings_and_keep_the_wire_shape() {
+        let mut cache = ResourceCache::default();
+        cache.cpu_processes(MetricReading::ready(
+            ProcessCpuSummary {
+                usage_scale:
+                    mangodisk_platform::system_resources::process_cpu::CpuUsageScale::TotalCapacity,
+                applications: vec![],
+                readable_process_count: 12,
+                omitted_process_count: 1,
+            },
+            1000,
+        ));
+        let first = cache.snapshot(1000);
+        let second = cache.snapshot(2000);
+        assert!(Arc::ptr_eq(
+            first.cpu_processes.value.as_ref().unwrap(),
+            second.cpu_processes.value.as_ref().unwrap()
+        ));
+        let wire = serde_json::to_value(&second).unwrap();
+        assert_eq!(wire["schemaVersion"], 7);
+        assert_eq!(wire["cpuProcesses"]["value"]["readableProcessCount"], 12);
+        assert!(!cache.expire(2000));
+        assert!(cache.expire(6001));
+        assert!(!cache.expire(6002));
+    }
+
+    #[test]
+    fn memory_overview_updates_preserve_detail_timestamp_and_empty_samples_clear_rows() {
+        use super::super::models::{MemoryOverview, ProcessMemorySummary};
+        let mut cache = ResourceCache::default();
+        let sample = |at, processes| SystemResourceSnapshot {
+            schema_version: 3,
+            sampled_at_ms: at,
+            memory: MemoryOverview {
+                total_bytes: 100,
+                used_bytes: 40,
+                free_bytes: 60,
+                swap_used_bytes: 0,
+                used_percent: 40,
+            },
+            processes,
+        };
+        let details = ProcessMemorySummary {
+            usage_kind: mangodisk_platform::system_resources::memory::ProcessMemoryKind::native(),
+            applications: vec![],
+            readable_process_count: 2,
+            omitted_process_count: 0,
+        };
+        cache.memory(sample(1000, Some(details)));
+        cache.memory(sample(12000, None));
+        let reading = cache.snapshot(12000);
+        assert_eq!(reading.memory.status, MetricStatus::Ready);
+        assert_eq!(reading.memory_processes.sampled_at_ms, Some(1000));
+        assert_eq!(reading.memory_processes.status, MetricStatus::Stale);
+        assert_eq!(
+            reading
+                .memory_processes
+                .value
+                .unwrap()
+                .readable_process_count,
+            2
+        );
+        cache.memory(sample(
+            13000,
+            Some(ProcessMemorySummary {
+                usage_kind: mangodisk_platform::system_resources::memory::ProcessMemoryKind::native(
+                ),
+                applications: vec![],
+                readable_process_count: 0,
+                omitted_process_count: 0,
+            }),
+        ));
+        assert_eq!(
+            cache
+                .snapshot(13000)
+                .memory_processes
+                .value
+                .unwrap()
+                .readable_process_count,
+            0
+        );
+        cache.fail(MetricId::Memory, MetricStatus::Failed);
+        assert_eq!(
+            cache.snapshot(14000).memory_processes.status,
+            MetricStatus::Failed
+        );
+        cache.suspend(MetricId::Memory);
+        assert!(cache.snapshot(14000).memory_processes.value.is_none());
+    }
+
+    #[test]
+    fn cpu_ranking_survives_baseline_and_failure_with_original_sample_time() {
+        let mut cache = ResourceCache::default();
+        let summary = ProcessCpuSummary {
+            usage_scale:
+                mangodisk_platform::system_resources::process_cpu::CpuUsageScale::TotalCapacity,
+            applications: vec![],
+            readable_process_count: 12,
+            omitted_process_count: 1,
+        };
+        cache.cpu_processes(MetricReading::ready(summary.clone(), 1000));
+        cache.cpu_processes(MetricReading::default());
+        let warm = cache.snapshot(2000).cpu_processes;
+        assert_eq!(warm.status, MetricStatus::Ready);
+        assert_eq!(warm.sampled_at_ms, Some(1000));
+        assert_eq!(warm.value.unwrap().readable_process_count, 12);
+        assert_eq!(
+            cache.snapshot(6001).cpu_processes.status,
+            MetricStatus::Stale
+        );
+        cache.cpu_processes(MetricReading {
+            status: MetricStatus::Failed,
+            ..Default::default()
+        });
+        let failed = cache.snapshot(7000).cpu_processes;
+        assert_eq!(failed.status, MetricStatus::Failed);
+        assert_eq!(failed.sampled_at_ms, Some(1000));
+        assert!(failed.value.is_some());
+        cache.cpu_processes(MetricReading::ready(summary, 8000));
+        assert_eq!(
+            cache.snapshot(8000).cpu_processes.status,
+            MetricStatus::Ready
+        );
+        cache.clear_cpu_processes();
+        assert!(cache.snapshot(8001).cpu_processes.value.is_none());
+    }
+
+    #[test]
+    fn application_cpu_readings_expire_and_clear_without_erasing_overview_history() {
+        let mut cache = ResourceCache::default();
+        cache.cpu_processes(MetricReading::ready(
+            ProcessCpuSummary {
+                usage_scale:
+                    mangodisk_platform::system_resources::process_cpu::CpuUsageScale::TotalCapacity,
+                applications: vec![],
+                readable_process_count: 0,
+                omitted_process_count: 2,
+            },
+            1000,
+        ));
+        assert_eq!(cache.snapshot(1000).schema_version, 7);
+        assert_eq!(
+            cache.snapshot(6001).cpu_processes.status,
+            MetricStatus::Stale
+        );
+        cache.clear_cpu_processes();
+        assert_eq!(
+            cache.snapshot(7000).cpu_processes.status,
+            MetricStatus::Loading
+        );
+        assert!(cache.snapshot(7000).cpu_processes.value.is_none());
+    }
 
     #[test]
     fn native_cpu_baselines_do_not_refresh_old_values() {
@@ -355,7 +566,7 @@ mod tests {
         let mut cache = ResourceCache::default();
         for time in [0, 3000, 6000] {
             cache.memory(SystemResourceSnapshot {
-                schema_version: 1,
+                schema_version: 3,
                 sampled_at_ms: time,
                 memory: super::super::models::MemoryOverview {
                     total_bytes: 100,

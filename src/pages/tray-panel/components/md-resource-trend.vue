@@ -68,33 +68,53 @@ const series = computed(() => {
   });
 });
 let frame = 0;
+let frameTimer: ReturnType<typeof setTimeout> | null = null;
+let lastPaint = -Infinity;
+// A minute-wide trend moves fractions of a pixel per frame. Bound SVG updates
+// independently of the display's refresh rate without changing sample cadence.
+const FRAME_INTERVAL_MS = 1000 / 30;
 let mounted = false;
 let reducedMotion: MediaQueryList | null = null;
 
-function paint() {
-  const clock = performance.now();
+function paint(clock = performance.now()) {
   // Move vector geometry instead of translating a cached bitmap. Fractional CSS
   // layer offsets can blur thin strokes in WebView2 at Windows display scaling.
   offset.value = timeline.offset(clock);
   amplitude.value = bidirectional.value ? scale.amplitude(clock) : 1;
 }
 function animate() {
+  frame = 0;
   if (props.active === false || document.hidden) {
     stop();
     return;
   }
-  paint();
+  const clock = performance.now();
+  if (clock - lastPaint >= FRAME_INTERVAL_MS) {
+    paint(clock);
+    lastPaint = clock;
+  }
   const last = points.value.at(-1);
   if (!last || timeline.position(last.sampledAtMs) + timeline.offset(performance.now()) < 0) {
     // A disconnected, fully empty viewport needs no continuous frame work.
     frame = 0;
     return;
   }
-  frame = requestAnimationFrame(animate);
+  // Wait outside the rendering loop instead of waking at 120/144 Hz just
+  // to skip a paint. RAF still aligns each SVG update with the next display frame.
+  frameTimer = setTimeout(
+    () => {
+      frameTimer = null;
+      frame = requestAnimationFrame(animate);
+    },
+    Math.max(1, Math.ceil(FRAME_INTERVAL_MS - (performance.now() - lastPaint)))
+  );
 }
 function stop() {
   cancelAnimationFrame(frame);
+  if (frameTimer !== null) clearTimeout(frameTimer);
+  frameTimer = null;
   frame = 0;
+  lastPaint = -Infinity;
 }
 function start() {
   if (
@@ -103,6 +123,7 @@ function start() {
     !document.hidden &&
     !reducedMotion?.matches &&
     !frame &&
+    frameTimer === null &&
     points.value.length
   ) {
     frame = requestAnimationFrame(animate);

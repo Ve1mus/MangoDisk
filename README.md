@@ -8,6 +8,8 @@
   English · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a>
 </p>
 
+The app interface supports English, Simplified and Traditional Chinese, Japanese, Korean, Turkish, and Brazilian Portuguese.
+
 <p align="center">
   <a href="https://github.com/harry0703/MangoDisk/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/harry0703/MangoDisk?display_name=tag&sort=semver"></a>
   <img alt="macOS supported" src="https://img.shields.io/badge/macOS-supported-111827?logo=apple&logoColor=white">
@@ -45,6 +47,10 @@ Find cleanable content scattered across the system, applications, developer tool
 - **Application optimization**: Shrink supported applications without affecting normal use, leaving more room on your disk.
 
 Smart recommendations help you make safe choices quickly. You can also review items individually and see the estimated reclaimable space upfront, keeping every cleanup predictable and under your control.
+
+If a scan cannot read some locations, its details show up to 50 failed read operations with paths and native errors. The failure total counts read attempts, not unique folders. A read failure alone does not indicate missing Full Disk Access.
+
+The details dialog can remember a choice to hide all Deep Cleanup read-failure alerts, including automatic macOS privacy guidance. This changes presentation only: unreadable items are still skipped and diagnostics remain available. Cleanup execution errors and other operation failures are still reported. Restore read-failure alerts from Settings → Scanning & analysis. These alerts are shown by default.
 
 ### 2. Large File Cleanup
 
@@ -330,6 +336,10 @@ mangodisk clean --apply --selection all --dry-run
 # Produce machine-readable JSON output
 mangodisk clean --format json --no-progress
 ```
+
+Cleanup scan schema `1.11` adds `readFailureDetails` (at most 50 records) alongside the complete `readFailureCount`. Readers of earlier snapshots should treat an absent details field as unavailable evidence, not as a successful read.
+
+Schema `1.12` adds the complete `permissionDeniedReadFailureCount`, allowing readers to distinguish permission-only failures even when the details are truncated. Earlier snapshots without this count may only be classified from details when the number of retained records equals the complete failure count.
 
 `mangodisk clean` only scans and never modifies files by default. To perform cleanup in a non-interactive environment, you must also pass `--yes` to confirm explicitly. Run the following command for all available options:
 

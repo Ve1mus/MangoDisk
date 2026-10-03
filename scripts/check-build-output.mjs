@@ -3,11 +3,11 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const assetDirectory = fileURLToPath(new URL('../dist/assets/', import.meta.url));
-const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'ko-kr', 'ru-ru', 'zh-cn', 'zh-tw']);
+const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'ko-kr', 'pt-br', 'ru-ru', 'tr-tr', 'zh-cn', 'zh-tw']);
 const maximumApplicationChunkBytes = 300 * 1024;
-// Allow a small raw-size margin for localized AI configuration help while
+// Allow a small raw-size margin for localized scan and monitoring guidance while
 // retaining the 60 KiB gzip limit on transferred locale assets.
-const maximumLocaleChunkBytes = 301 * 1024;
+const maximumLocaleChunkBytes = 303 * 1024;
 const maximumLocaleGzipBytes = 60 * 1024;
 // Cyrillic uses two UTF-8 bytes per letter. Keep a measured, locale-specific
 // allowance instead of weakening the budget for every locale chunk.

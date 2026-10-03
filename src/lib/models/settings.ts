@@ -7,6 +7,8 @@ export const LANGUAGE_IDS = {
   koKR: 'ko-KR',
   ruRU: 'ru-RU',
   enUS: 'en-US',
+  trTR: 'tr-TR',
+  ptBR: 'pt-BR',
 } as const;
 
 export type LanguageId = (typeof LANGUAGE_IDS)[keyof typeof LANGUAGE_IDS];
@@ -48,6 +50,18 @@ export const LANGUAGE_OPTIONS = [
     websitePath: '',
   },
   {
+    id: LANGUAGE_IDS.trTR,
+    labelKey: 'settings.languageNames.trTR',
+    browserLanguagePrefixes: ['tr'],
+    websitePath: '',
+  },
+  {
+    id: LANGUAGE_IDS.ptBR,
+    labelKey: 'settings.languageNames.ptBR',
+    browserLanguagePrefixes: ['pt'],
+    websitePath: '',
+  },
+  {
     id: LANGUAGE_IDS.enUS,
     labelKey: 'settings.languageNames.enUS',
     browserLanguagePrefixes: ['en'],
@@ -77,6 +91,7 @@ export function isThemeId(value: unknown): value is ThemeId {
 }
 
 export interface AppSettings {
+  hideCleanupReadFailureAlerts: boolean;
   language: LanguageId;
   theme: ThemeId;
   largeFileMinimumBytes: number;
