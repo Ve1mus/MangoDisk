@@ -6,11 +6,49 @@ import Trend from './md-resource-trend.vue';
 
 const point = (sampledAtMs: number) => ({ sampledAtMs, primary: 50, secondary: null });
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('resource trend rendering', () => {
+  it('bounds frame callbacks on high-refresh displays while preserving live scrolling', async () => {
+    vi.useFakeTimers();
+    let clock = 0;
+    const pending: FrameRequestCallback[] = [];
+    const request = vi.fn((callback: FrameRequestCallback) => {
+      pending.push(callback);
+      return 1;
+    });
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    vi.stubGlobal('requestAnimationFrame', request);
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const wrapper = mount(Trend, {
+      props: { metric: 'cpu', label: 'CPU', observedAtMs: 60000, history: [point(58000), point(60000)] },
+    });
+    await nextTick();
+    let paints = 0;
+    let previous = wrapper.get('svg > g').attributes('transform');
+    for (let n = 1; n <= 120; n++) {
+      clock = (n * 1000) / 120;
+      vi.advanceTimersByTime(1000 / 120);
+      const callback = pending.shift();
+      callback?.(clock);
+      await nextTick();
+      const transform = wrapper.get('svg > g').attributes('transform');
+      if (transform !== previous) paints++;
+      previous = transform;
+    }
+    expect(request.mock.calls.length).toBeLessThanOrEqual(31);
+    expect(paints).toBeGreaterThanOrEqual(24);
+    expect(paints).toBeLessThanOrEqual(31);
+    await wrapper.setProps({ active: false });
+    const requests = request.mock.calls.length;
+    vi.advanceTimersByTime(1000);
+    expect(request).toHaveBeenCalledTimes(requests);
+    wrapper.unmount();
+  });
+
   it('cancels native-hidden animation and resumes from updated history', async () => {
     const request = vi.fn(() => 1);
     const cancel = vi.fn();
@@ -73,6 +111,7 @@ describe('resource trend rendering', () => {
   });
 
   it('leaves invalid or missing intervals blank and stops after the buffered tail exits', () => {
+    vi.useFakeTimers();
     let clock = 0;
     let animate: FrameRequestCallback = () => {};
     const request = vi.fn((callback: FrameRequestCallback) => {
@@ -95,6 +134,7 @@ describe('resource trend rendering', () => {
     expect(geometry).not.toContain('NaN');
     clock = 61200;
     animate(clock);
+    vi.advanceTimersByTime(34);
     expect(request).toHaveBeenCalledTimes(2);
     clock = 61251;
     animate(clock);

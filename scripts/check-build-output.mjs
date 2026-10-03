@@ -3,19 +3,19 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const assetDirectory = fileURLToPath(new URL('../dist/assets/', import.meta.url));
-const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'ko-kr', 'ru-ru', 'zh-cn', 'zh-tw']);
+const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'ko-kr', 'pt-br', 'ru-ru', 'tr-tr', 'zh-cn', 'zh-tw']);
 const maximumApplicationChunkBytes = 300 * 1024;
-// Allow a small raw-size margin for localized AI configuration help while
+// Allow a small raw-size margin for localized scan and monitoring guidance while
 // retaining the 60 KiB gzip limit on transferred locale assets.
-const maximumLocaleChunkBytes = 301 * 1024;
+const maximumLocaleChunkBytes = 303 * 1024;
 const maximumLocaleGzipBytes = 60 * 1024;
 // Cyrillic uses two UTF-8 bytes per letter and Japanese kana and kanji use three.
 // Keep a measured, locale-specific allowance instead of weakening the budget for
-// every locale chunk. Japanese measured 315 KiB and Russian 66.8 KiB gzip with the
+// every locale chunk. Japanese measured 316.1 KiB, Russian 380.3 KiB and 66.9 KiB gzip with the
 // developer tools, open files, and memory pages.
 const localeChunkLimitOverrides = new Map([
-  ['ja-jp', { bytes: 316 * 1024, gzipBytes: 60 * 1024 }],
-  ['ru-ru', { bytes: 380 * 1024, gzipBytes: 68 * 1024 }],
+  ['ja-jp', { bytes: 317 * 1024, gzipBytes: 60 * 1024 }],
+  ['ru-ru', { bytes: 381 * 1024, gzipBytes: 68 * 1024 }],
 ]);
 
 function fail(message) {

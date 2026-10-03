@@ -33,6 +33,8 @@ pub enum AiDelta {
 pub struct AiUsage {
     pub prompt_tokens: Option<u64>,
     pub completion_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feedback: Option<super::AiFeedbackTarget>,
 }
 
 fn payload(config: &AiConfiguration, request: &AiRequest) -> Result<serde_json::Value, AiError> {
@@ -41,7 +43,7 @@ fn payload(config: &AiConfiguration, request: &AiRequest) -> Result<serde_json::
     }
     let user = if let Some(context) = &request.context {
         context.validate()?;
-        serde_json::to_string(context).map_err(|_| AiError::InvalidContext)?
+        context.provider_json()?
     } else {
         "Connection test only. Reply with OK.".to_owned()
     };
@@ -208,6 +210,9 @@ pub(super) async fn stream_request(
     let run = async {
         let mut response = builder.send().await.map_err(network_error)?;
         let status = response.status().as_u16();
+        let feedback = official
+            .then(|| super::feedback::target(response.headers()))
+            .flatten();
         if official {
             // Only a bounded UUID is accepted into logs. This joins desktop
             // operation diagnostics to the server ledger without logging context.
@@ -275,7 +280,9 @@ pub(super) async fn stream_request(
         }
         .await;
         result?;
-        stream.finish()
+        let mut usage = stream.finish()?;
+        usage.feedback = feedback;
+        Ok(usage)
     };
     let mut result = tokio::select! {
         result = run => result,
@@ -302,6 +309,36 @@ pub(super) async fn stream_request(
 mod tests {
 
     use super::*;
+
+    #[test]
+    #[ignore = "exports production messages to an explicit private artifact file without network IO"]
+    fn export_ai_evaluation_messages() {
+        let input = std::env::var_os("MANGODISK_AI_EVAL_INPUT").expect("explicit corpus file");
+        let output = std::env::var_os("MANGODISK_AI_EVAL_OUTPUT").expect("explicit output file");
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_slice(&std::fs::read(input).unwrap()).unwrap();
+        assert!(!cases.is_empty() && cases.len() <= 64);
+        let config = fixture_config("https://example.com/v1".into());
+        let values: Vec<_> = cases
+            .into_iter()
+            .map(|case| {
+                let request = AiRequest {
+                    context: Some(serde_json::from_value(case["context"].clone()).unwrap()),
+                    language: case["language"].as_str().unwrap_or("zh-CN").into(),
+                };
+                let body = payload(&config, &request).unwrap();
+                json!({"id":case["id"],"language":request.language,
+                    "module":request.context.unwrap().subject.module_name(),
+                    "messages":body["messages"]})
+            })
+            .collect();
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(output)
+            .unwrap();
+        std::io::Write::write_all(&mut file, &serde_json::to_vec(&values).unwrap()).unwrap();
+    }
 
     #[test]
     fn opencode_go_requests_include_a_private_session() {
@@ -812,7 +849,15 @@ mod tests {
             "does not start or stop",
             "unapplied draft",
             "not that a fault was detected",
+            "not a verified cleanup candidate",
+            "different paths are interchangeable",
+            "Uninstalling removes application functionality",
         ];
+        assert_eq!(
+            fixtures.len(),
+            expected.len(),
+            "every module fixture must have a prompt boundary assertion"
+        );
         for (fixture, boundary) in fixtures.into_iter().zip(expected) {
             let context: AiContext = serde_json::from_value(fixture).unwrap();
             let (endpoint, thread) = server(200, "data: {\"choices\":[{\"delta\":{\"content\":\"Purpose.\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\" Impact.\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
