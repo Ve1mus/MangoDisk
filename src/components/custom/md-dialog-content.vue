@@ -72,6 +72,9 @@ const sizeClass = {
   width: calc(100% - var(--layout-dialog-viewport-inset) - var(--layout-dialog-viewport-inset));
   max-height: calc(100vh - var(--layout-dialog-viewport-inset) - var(--layout-dialog-viewport-inset));
   gap: 0;
+  /* The primitive is a grid with an implicit auto track. A nowrap child wider
+     than the dialog would otherwise widen that track and clip every row. */
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   padding: 0;
 }
